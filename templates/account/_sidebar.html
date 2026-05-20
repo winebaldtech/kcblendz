@@ -1,0 +1,48 @@
+{# Account sidebar — uses `active` var to highlight current link #}
+<aside class="lg:col-span-3">
+  <div class="bg-white rounded-2xl border-2 border-[var(--kc-dark)] p-2 lg:sticky lg:top-32">
+    <nav class="space-y-1">
+      <a href="{{ url_for('account_dashboard') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg font-semibold text-sm {% if active == 'dashboard' %}btn-green text-white{% else %}hover:bg-[var(--kc-yellow)]{% endif %}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Dashboard
+      </a>
+      <a href="{{ url_for('account_orders') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg font-semibold text-sm {% if active == 'orders' %}btn-green text-white{% else %}hover:bg-[var(--kc-yellow)]{% endif %}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+        My Orders
+      </a>
+      <a href="{{ url_for('account_subscriptions') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg font-semibold text-sm {% if active == 'subscriptions' %}btn-green text-white{% else %}hover:bg-[var(--kc-yellow)]{% endif %}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        My Subscriptions
+      </a>
+      <a href="{{ url_for('account_favorites') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg font-semibold text-sm {% if active == 'favorites' %}btn-green text-white{% else %}hover:bg-[var(--kc-yellow)]{% endif %}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        Favorites
+        {% if user_favorite_ids %}<span class="ml-auto text-[10px] bg-[var(--kc-orange)] text-white px-1.5 py-0.5 rounded-full font-bold">{{ user_favorite_ids|length }}</span>{% endif %}
+      </a>
+      <a href="{{ url_for('account_saved') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg font-semibold text-sm {% if active == 'saved' %}btn-green text-white{% else %}hover:bg-[var(--kc-yellow)]{% endif %}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        Saved Smoothies
+      </a>
+      <a href="{{ url_for('account_addresses') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg font-semibold text-sm {% if active == 'addresses' %}btn-green text-white{% else %}hover:bg-[var(--kc-yellow)]{% endif %}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        Addresses
+      </a>
+      <a href="{{ url_for('account_notifications') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg font-semibold text-sm {% if active == 'notifications' %}btn-green text-white{% else %}hover:bg-[var(--kc-yellow)]{% endif %}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        Notifications
+      </a>
+      <a href="{{ url_for('account_profile') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg font-semibold text-sm {% if active == 'profile' %}btn-green text-white{% else %}hover:bg-[var(--kc-yellow)]{% endif %}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Profile
+      </a>
+      <div class="border-t-2 border-dashed border-[var(--kc-dark)]/20 my-1"></div>
+      <form action="{{ url_for('logout') }}" method="post">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <button type="submit" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-semibold text-sm text-[var(--kc-dark)] hover:bg-[var(--kc-yellow)] transition">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Sign out
+        </button>
+      </form>
+    </nav>
+  </div>
+</aside>

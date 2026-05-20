@@ -1,0 +1,214 @@
+{% extends "admin/_layout.html" %}
+{% set active = 'dashboard' %}
+{% block title %}Admin — Dashboard — KCBlendz{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block head_extra %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block admin_body %}
+<!-- Stat cards -->
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+  <!-- Revenue today (split by currency so we never mix NGN, MUR & USD into one number) -->
+  <div class="bg-white rounded-2xl border-2 border-[var(--kc-dark)] p-4 shadow-[4px_4px_0_var(--kc-orange)]">
+    <p class="text-[10px] uppercase tracking-widest font-bold text-gray-500">Revenue today</p>
+    {% if stats['revenue_today'] %}
+      <div class="mt-1 space-y-0.5">
+        {% for region, amt in stats['revenue_today'].items() %}
+          <p class="text-base md:text-lg font-extrabold text-[var(--kc-dark)] leading-tight">
+            {{ format_money(amt, region) }}
+            <span class="text-[10px] uppercase tracking-widest font-bold text-gray-400 ml-1">{{ region }}</span>
+          </p>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-2xl font-extrabold mt-1 text-gray-300">—</p>
+      <p class="text-[11px] text-gray-500 mt-0.5">No paid orders today</p>
+    {% endif %}
+  </div>
+  <div class="bg-white rounded-2xl border-2 border-[var(--kc-dark)] p-4 shadow-[4px_4px_0_var(--kc-yellow)]">
+    <p class="text-[10px] uppercase tracking-widest font-bold text-gray-500">Revenue this month</p>
+    {% if stats['revenue_month'] %}
+      <div class="mt-1 space-y-0.5">
+        {% for region, amt in stats['revenue_month'].items() %}
+          <p class="text-base md:text-lg font-extrabold text-[var(--kc-dark)] leading-tight">
+            {{ format_money(amt, region) }}
+            <span class="text-[10px] uppercase tracking-widest font-bold text-gray-400 ml-1">{{ region }}</span>
+          </p>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-2xl font-extrabold mt-1 text-gray-300">—</p>
+    {% endif %}
+  </div>
+  <div class="bg-white rounded-2xl border-2 border-[var(--kc-dark)] p-4 shadow-[4px_4px_0_var(--kc-green)]">
+    <p class="text-[10px] uppercase tracking-widest font-bold text-gray-500">Orders today</p>
+    <p class="text-2xl md:text-3xl font-extrabold mt-1 text-[var(--kc-dark)]">{{ stats['orders_today'] }}</p>
+    <p class="text-[11px] text-gray-500 mt-0.5">{{ stats['orders_month'] }} this month</p>
+  </div>
+  <div class="bg-white rounded-2xl border-2 border-[var(--kc-dark)] p-4 shadow-[4px_4px_0_var(--kc-green-deep)]">
+    <p class="text-[10px] uppercase tracking-widest font-bold text-gray-500">Customers</p>
+    <p class="text-2xl md:text-3xl font-extrabold mt-1 text-[var(--kc-dark)]">{{ stats['customers'] }}</p>
+    <p class="text-[11px] text-gray-500 mt-0.5">{{ stats['products'] }} active products</p>
+  </div>
+</div>
+
+<!-- Chart — wrapped in fixed-height container so Chart.js stops growing -->
+<div class="bg-white rounded-2xl border-2 border-[var(--kc-dark)] p-5 mb-6">
+  <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+    <h2 class="text-lg font-extrabold uppercase tracking-wider text-[var(--kc-dark)]">Revenue · last 7 days</h2>
+    <span class="text-xs text-gray-500">three series · each in its own currency</span>
+  </div>
+  <!-- FIX: fixed-height wrapper prevents the canvas from growing infinitely -->
+  <div style="position: relative; height: 280px; width: 100%;">
+    <canvas id="rev7"></canvas>
+  </div>
+</div>
+
+<!-- 2-col -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <!-- Recent orders -->
+  <div class="lg:col-span-2 bg-white rounded-2xl border-2 border-[var(--kc-dark)] p-5">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-extrabold uppercase tracking-wider">Recent orders</h2>
+      <a href="{{ url_for('admin_orders') }}" class="text-xs font-bold uppercase tracking-wider hover:text-[var(--kc-orange)]">All →</a>
+    </div>
+    {% if recent_orders %}
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="text-[11px] uppercase tracking-widest text-gray-500 border-b border-gray-200">
+          <tr><th class="text-left py-2">Order</th><th class="text-left">Customer</th><th class="text-left">Region</th><th class="text-left">Status</th><th class="text-right">Total</th></tr>
+        </thead>
+        <tbody>
+        {% for o in recent_orders %}
+          <tr class="border-b border-dashed border-gray-200">
+            <td class="py-2 font-mono"><a href="{{ url_for('admin_order_detail', order_id=o['id']) }}" class="font-bold hover:text-[var(--kc-orange)]">{{ o['order_number'] }}</a></td>
+            <td class="py-2">{{ o['full_name'] }}</td>
+            <td class="py-2"><span class="badge-square bg-gray-100 border border-[var(--kc-dark)]">{{ o['region'] }}</span></td>
+            <td class="py-2"><span class="badge-square {% if o['payment_status']=='paid' %}bg-[var(--kc-green)] text-white{% else %}bg-[var(--kc-yellow)] text-[var(--kc-dark)]{% endif %}">{{ o['payment_status'] }}</span></td>
+            <td class="py-2 text-right font-extrabold">{{ format_money(o['total'], o['region']) }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <p class="text-sm text-gray-500">No orders yet.</p>
+    {% endif %}
+  </div>
+
+  <!-- Notifications -->
+  <div class="bg-white rounded-2xl border-2 border-[var(--kc-dark)] p-5">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-extrabold uppercase tracking-wider">Notifications</h2>
+      <a href="{{ url_for('admin_notifications') }}" class="text-xs font-bold uppercase tracking-wider hover:text-[var(--kc-orange)]">All →</a>
+    </div>
+    {% if notifs %}
+      <ul class="space-y-3">
+        {% for n in notifs[:6] %}
+        <li class="flex items-start gap-2 text-sm">
+          <span class="w-2 h-2 mt-2 rounded-full {% if n['is_read'] %}bg-gray-300{% else %}bg-[var(--kc-orange)]{% endif %} shrink-0"></span>
+          <div class="flex-1 min-w-0">
+            <p class="font-bold text-xs">{{ n['title'] }}</p>
+            {% if n['body'] %}<p class="text-[11px] text-gray-600 line-clamp-2">{{ n['body'] }}</p>{% endif %}
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="text-sm text-gray-500">All clear.</p>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Recent users -->
+<div class="bg-white rounded-2xl border-2 border-[var(--kc-dark)] p-5 mt-6">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-lg font-extrabold uppercase tracking-wider">New customers</h2>
+    <a href="{{ url_for('admin_users') }}" class="text-xs font-bold uppercase tracking-wider hover:text-[var(--kc-orange)]">All →</a>
+  </div>
+  {% if recent_users %}
+  <ul class="divide-y-2 divide-dashed divide-gray-200">
+    {% for u in recent_users %}
+    <li class="py-2 flex items-center gap-3">
+      <div class="w-9 h-9 rounded-full bg-[var(--kc-yellow)] border-2 border-[var(--kc-dark)] flex items-center justify-center font-extrabold text-xs">
+        {{ u['full_name'][:1] | upper if u['full_name'] else '?' }}
+      </div>
+      <div class="flex-1 min-w-0">
+        <a href="{{ url_for('admin_user_detail', uid=u['id']) }}" class="font-bold text-sm hover:text-[var(--kc-orange)]">{{ u['full_name'] or u['email'] }}</a>
+        <p class="text-xs text-gray-500">{{ u['email'] }}</p>
+      </div>
+      <span class="text-xs text-gray-500">{{ u['created_at'][:10] }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+    <p class="text-sm text-gray-500">No new customers yet.</p>
+  {% endif %}
+</div>
+
+<script>
+(function() {
+  const ng = {{ last7_ng | map(attribute='v') | list | tojson }};
+  const ngDates = {{ last7_ng | map(attribute='d') | list | tojson }};
+  const mu = {{ last7_mu | map(attribute='v') | list | tojson }};
+  const gl = {{ last7_gl | map(attribute='v') | list | tojson }};
+
+  // Build full 7-day axis
+  const today = new Date();
+  const labels = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    labels.push(d.toISOString().slice(0,10));
+  }
+  function align(data, dates) {
+    return labels.map(l => {
+      const idx = dates.indexOf(l);
+      return idx >= 0 ? data[idx] : 0;
+    });
+  }
+  const ngData = align(ng, ngDates);
+  const muData = align(mu, {{ last7_mu | map(attribute='d') | list | tojson }});
+  const glData = align(gl, {{ last7_gl | map(attribute='d') | list | tojson }});
+
+  const ctx = document.getElementById('rev7');
+  if (!ctx) return;
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels.map(l => l.slice(5)),
+      datasets: [
+        { label: 'Nigeria (NGN)',   data: ngData, yAxisID: 'yNG', borderColor: '#F7941D', backgroundColor: 'rgba(247,148,29,.12)', borderWidth: 3, tension: .3, fill: true, pointRadius: 4, pointBackgroundColor: '#F7941D' },
+        { label: 'Mauritius (MUR)', data: muData, yAxisID: 'yMU', borderColor: '#2E8B57', backgroundColor: 'rgba(46,139,87,.12)',   borderWidth: 3, tension: .3, fill: true, pointRadius: 4, pointBackgroundColor: '#2E8B57' },
+        { label: 'Global (USD)',    data: glData, yAxisID: 'yGL', borderColor: '#FBC02D', backgroundColor: 'rgba(251,192,45,.12)', borderWidth: 3, tension: .3, fill: true, pointRadius: 4, pointBackgroundColor: '#FBC02D' },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 600 },
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 12, weight: '600' }, color: '#1B3A2F' } },
+        tooltip: { callbacks: {
+          label: function(ctx){
+            var sym = { 'Nigeria (NGN)': '\u20a6', 'Mauritius (MUR)': 'Rs ', 'Global (USD)': '$' }[ctx.dataset.label] || '';
+            return ctx.dataset.label + ': ' + sym + Number(ctx.parsed.y).toLocaleString();
+          }
+        }}
+      },
+      scales: {
+        // Each region gets its own Y axis so different currency scales
+        // (₦15k vs Rs380 vs $5) don't squash each other on a single axis.
+        yNG: { type: 'linear', position: 'left',  beginAtZero: true, grid: { color: 'rgba(247,148,29,0.08)' }, ticks: { color: '#F7941D', callback: v => '\u20a6' + Number(v).toLocaleString() } },
+        yMU: { type: 'linear', position: 'right', beginAtZero: true, grid: { display: false }, ticks: { color: '#2E8B57', callback: v => 'Rs ' + Number(v).toLocaleString() } },
+        yGL: { type: 'linear', position: 'right', beginAtZero: true, grid: { display: false }, ticks: { color: '#FBC02D', callback: v => '$' + Number(v).toLocaleString() } },
+        x:   { ticks: { color: '#6b7280' }, grid: { display: false } }
+      }
+    }
+  });
+})();
+</script>
+{% endblock %}

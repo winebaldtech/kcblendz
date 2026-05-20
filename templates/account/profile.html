@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Profile — KCBlendz{% endblock %}
+{% set active = 'profile' %}
+
+{% block content %}
+<section class="max-w-7xl mx-auto px-4 py-8">
+  <h1 class="text-3xl md:text-4xl font-extrabold mb-6">Profile</h1>
+
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    {% include 'account/_sidebar.html' %}
+
+    <div class="lg:col-span-9 space-y-5">
+      <!-- Account info -->
+      <form action="{{ url_for('account_profile') }}" method="post" class="bg-white rounded-2xl border-2 border-black p-5 space-y-4">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <h2 class="text-lg font-extrabold uppercase tracking-wider">Personal info</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="label">Full name</label>
+            <input type="text" name="full_name" value="{{ u['full_name'] }}" required class="input w-full">
+          </div>
+          <div>
+            <label class="label">Phone</label>
+            <input type="tel" name="phone" value="{{ u['phone'] or '' }}" class="input w-full">
+          </div>
+          <div class="md:col-span-2">
+            <label class="label">Email (cannot be changed)</label>
+            <input type="email" value="{{ u['email'] }}" disabled class="input w-full opacity-60 cursor-not-allowed">
+          </div>
+        </div>
+
+        <h2 class="text-lg font-extrabold uppercase tracking-wider pt-4 border-t-2 border-dashed border-gray-200">Change password</h2>
+        <p class="text-xs text-gray-500">Leave blank if you don't want to change it.</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="label">Current password</label>
+            <input type="password" name="current_password" class="kc-no-native-reveal input w-full">
+          </div>
+          <div>
+            <label class="label">New password</label>
+            <input type="password" name="new_password" minlength="8" class="kc-no-native-reveal input w-full">
+          </div>
+        </div>
+
+        <div class="pt-2">
+          <button type="submit" class="btn-fuchsia rounded-full px-6 py-3 font-extrabold uppercase tracking-wider text-sm border-2 border-black shadow-[4px_4px_0_#000]">Save changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}

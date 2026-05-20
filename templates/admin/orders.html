@@ -1,0 +1,76 @@
+{% from "partials/_macros.html" import export_button %}
+{% extends "admin/_layout.html" %}
+{% set active = 'orders' %}
+{% block title %}Admin — Orders{% endblock %}
+{% block page_title %}Orders{% endblock %}
+
+{% block admin_body %}
+<div class="bg-white rounded-2xl border-2 border-black p-5">
+  <!-- Filters -->
+  <form method="get" action="{{ url_for('admin_orders') }}" class="flex flex-wrap items-center gap-3 mb-4">
+    <div class="flex flex-1 min-w-[220px] border-2 border-black rounded-full overflow-hidden">
+      <input type="search" name="q" value="{{ q }}" placeholder="Order #, customer, email..." class="flex-1 px-3 py-2 text-sm outline-none">
+      <button type="submit" class="bg-[var(--fuchsia)] text-white px-3">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </button>
+    </div>
+    <select name="status" onchange="this.form.submit()" class="input text-sm">
+      <option value="">All statuses</option>
+      {% for s in ['pending','processing','ready','out_for_delivery','delivered','cancelled'] %}
+        <option value="{{ s }}" {% if s==status %}selected{% endif %}>{{ s|replace('_',' ')|capitalize }}</option>
+      {% endfor %}
+    </select>
+    <select name="region" onchange="this.form.submit()" class="input text-sm">
+      <option value="">All regions</option>
+      <option value="NG" {% if region=='NG' %}selected{% endif %}>Nigeria</option>
+      <option value="MU" {% if region=='MU' %}selected{% endif %}>Mauritius</option>
+      <option value="GL" {% if region=='GL' %}selected{% endif %}>Global</option>
+    </select>
+    {% if q or status or region %}
+      <a href="{{ url_for('admin_orders') }}" class="text-xs font-bold uppercase tracking-wider hover:text-[var(--fuchsia)]">Clear</a>
+    {% endif %}
+    {{ export_button(url_for('admin_orders_export'), 'Export CSV', extra_class='ml-auto') }}
+  </form>
+
+  <!-- Table -->
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="text-[11px] uppercase tracking-widest text-gray-500 border-b-2 border-black">
+        <tr>
+          <th class="text-left py-2">Order</th>
+          <th class="text-left">Customer</th>
+          <th class="text-left">Region</th>
+          <th class="text-left">Status</th>
+          <th class="text-left">Payment</th>
+          <th class="text-right">Total</th>
+          <th class="text-left">Date</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for o in orders %}
+        <tr class="border-b border-dashed border-gray-200 hover:bg-[var(--lime)]/10">
+          <td class="py-2 font-mono font-bold">
+            <a href="{{ url_for('admin_order_detail', order_id=o['id']) }}" class="hover:text-[var(--fuchsia)]">{{ o['order_number'] }}</a>
+          </td>
+          <td class="py-2">
+            <p class="font-bold">{{ o['full_name'] }}</p>
+            <p class="text-[11px] text-gray-500">{{ o['email'] }}</p>
+          </td>
+          <td class="py-2"><span class="badge-square bg-gray-100 border border-black">{{ o['region'] }}</span></td>
+          <td class="py-2"><span class="badge-square bg-gray-100 border border-black">{{ o['order_status'] }}</span></td>
+          <td class="py-2"><span class="badge-square {% if o['payment_status']=='paid' %}bg-[var(--lime)] text-black{% elif o['payment_status']=='refunded' %}bg-[var(--sky)] text-white{% elif o['payment_status']=='failed' %}bg-rose-200 text-rose-900{% else %}bg-[var(--yellow)] text-black{% endif %}">{{ o['payment_status'].replace('_',' ') }}</span></td>
+          <td class="py-2 text-right font-extrabold">{{ format_money(o['total'], o['region']) }}</td>
+          <td class="py-2 text-xs text-gray-500">{{ o['created_at'][:16] }}</td>
+          <td class="py-2 text-right">
+            <a href="{{ url_for('admin_order_detail', order_id=o['id']) }}" class="text-xs font-bold uppercase tracking-wider hover:text-[var(--fuchsia)]">View</a>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="8" class="text-center py-8 text-gray-500">No orders match these filters.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

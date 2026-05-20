@@ -1,0 +1,75 @@
+{% extends "admin/_layout.html" %}
+{% set active = 'builder' %}
+{% block title %}Admin — Builder Config{% endblock %}
+{% block page_title %}Custom Builder configuration{% endblock %}
+
+{% block admin_body %}
+<!-- Add new -->
+<form method="post" action="{{ url_for('admin_builder') }}" class="bg-white rounded-2xl border-2 border-black p-5 mb-6">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <h2 class="text-base font-extrabold uppercase tracking-wider mb-4">Add option</h2>
+  <div class="grid grid-cols-2 md:grid-cols-6 gap-3">
+    <div>
+      <label class="label">Type</label>
+      <select name="option_type" class="input w-full" required>
+        <option value="cup_size">Cup size</option>
+        <option value="fruit">Fruit</option>
+        <option value="base">Base</option>
+        <option value="sweetener">Sweetener</option>
+        <option value="addon">Add-on</option>
+        <option value="booster">Booster</option>
+      </select>
+    </div>
+    <div class="col-span-2">
+      <label class="label">Name</label>
+      <input type="text" name="name" required class="input w-full">
+    </div>
+    <div>
+      <label class="label">Price NGN</label>
+      <input type="number" step="1" name="price_ngn" value="0" class="input w-full">
+    </div>
+    <div>
+      <label class="label">Price MUR</label>
+      <input type="number" step="1" name="price_mur" value="0" class="input w-full">
+    </div>
+    <div>
+      <label class="label">Price USD</label>
+      <input type="number" step="0.01" name="price_usd" value="0" class="input w-full">
+    </div>
+  </div>
+  <button type="submit" class="mt-4 btn-fuchsia rounded-full px-5 py-2.5 font-extrabold uppercase tracking-wider text-sm border-2 border-black inline-flex items-center gap-2">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    Add option
+  </button>
+</form>
+
+<!-- Grouped tables -->
+{% set group_labels = {'cup_size':'Cup sizes', 'fruit':'Fruits', 'base':'Bases', 'sweetener':'Sweeteners', 'addon':'Add-ons', 'booster':'Boosters'} %}
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+  {% for key, label in group_labels.items() %}
+  <div class="bg-white rounded-2xl border-2 border-black p-5">
+    <h3 class="text-base font-extrabold uppercase tracking-wider mb-3">{{ label }} <span class="text-xs text-gray-500 font-bold">({{ grouped.get(key, []) | length }})</span></h3>
+    {% if grouped.get(key) %}
+    <ul class="divide-y-2 divide-dashed divide-gray-200 text-sm">
+      {% for o in grouped[key] %}
+      <li class="py-2 flex items-center gap-3">
+        <p class="flex-1 font-bold">{{ o['name'] }}</p>
+        <p class="text-xs font-mono text-gray-700">₦{{ '%.0f' % o['price_ngn'] }}</p>
+        <p class="text-xs font-mono text-gray-700">Rs{{ '%.0f' % o['price_mur'] }}</p>
+        <p class="text-xs font-mono text-gray-700">${{ '%.2f' % o['price_usd'] }}</p>
+        <form action="{{ url_for('admin_builder_delete', oid=o['id']) }}" method="post" data-confirm="This option will disappear from the customer builder. Past orders keep their saved configs." data-confirm-title="Remove builder option?" data-confirm-label="Remove">
+          <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+          <button type="submit" class="icon-btn text-rose-600" aria-label="Delete">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/></svg>
+          </button>
+        </form>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="text-sm text-gray-500 py-2">No {{ label|lower }} configured.</p>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

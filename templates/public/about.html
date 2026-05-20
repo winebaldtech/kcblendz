@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}About — KCBlendz{% endblock %}
+
+{% block content %}
+<section class="bg-[var(--dark)] text-white border-b-2 border-black">
+  <div class="max-w-7xl mx-auto px-4 py-16 md:py-20">
+    <p class="text-[var(--lime)] uppercase tracking-[0.3em] text-xs font-extrabold mb-3">Our Story</p>
+    <h1 class="brand text-5xl md:text-7xl leading-none mb-5">Born in a kitchen,<br>built for the <span class="text-[var(--fuchsia)]">world</span>.</h1>
+    <p class="text-gray-300 max-w-2xl text-lg">KCBlendz started with one rule: never compromise on the fruit. Born in our campus kitchen — Kitchen 2 Kongo, Pamplemousses, Mauritius — we've grown into a wellness brand serving customers across Mauritius, Nigeria, and shipping shelf-stable goods worldwide.</p>
+  </div>
+</section>
+
+<section class="max-w-7xl mx-auto px-4 py-12 grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
+  <div>
+    <p class="text-[var(--fuchsia)] uppercase tracking-widest text-xs font-extrabold mb-2">Our mission</p>
+    <h2 class="text-3xl md:text-4xl font-extrabold mb-4">Nourishing lives, inspiring wellness.</h2>
+    <p class="text-gray-700 leading-relaxed mb-4">Wellness isn't a fad — it's daily nourishment, made simple. We exist to put real, whole fruit and plant-based wellness drinks within reach of every busy household, gym-goer, parent, and professional.</p>
+    <p class="text-gray-700 leading-relaxed">Every smoothie, juice, dried fruit and powder we make starts from raw ingredients sourced from local agro-processors. No syrups. No fillers. No shortcuts.</p>
+  </div>
+  <div class="aspect-square rounded-2xl border-2 border-black overflow-hidden bg-gradient-to-br from-[var(--lime)] to-[var(--fuchsia)] p-4 flex items-center justify-center">
+    <video class="w-full h-full object-cover rounded-xl border-2 border-black"
+           autoplay muted loop playsinline
+           poster="{{ url_for('static', filename='img/kcblendz-products.png') }}">
+      <source src="{{ url_for('static', filename='img/kcblendz-video.mp4') }}" type="video/mp4">
+      <img src="{{ url_for('static', filename='img/kcblendz-products.png') }}" alt="KCBlendz products" class="w-full h-full object-contain">
+    </video>
+  </div>
+</section>
+
+<!-- Values -->
+<section class="bg-white border-y-2 border-black py-14">
+  <div class="max-w-7xl mx-auto px-4">
+    <p class="text-[var(--fuchsia)] uppercase tracking-widest text-xs font-extrabold mb-1 text-center">What we stand for</p>
+    <h2 class="text-3xl md:text-4xl font-extrabold mb-8 text-center">Our values</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div class="bg-[var(--bg)] rounded-2xl border-2 border-black p-6 shadow-[4px_4px_0_var(--fuchsia)]">
+        <div class="w-12 h-12 rounded-full bg-[var(--fuchsia)] border-2 border-black flex items-center justify-center mb-4">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/></svg>
+        </div>
+        <h3 class="font-extrabold text-xl mb-2">Real ingredients</h3>
+        <p class="text-sm text-gray-700">Whole fruit, no concentrates or syrups. If you wouldn't eat it raw, we won't put it in.</p>
+      </div>
+      <div class="bg-[var(--bg)] rounded-2xl border-2 border-black p-6 shadow-[4px_4px_0_var(--lime)]">
+        <div class="w-12 h-12 rounded-full bg-[var(--lime)] border-2 border-black flex items-center justify-center mb-4">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        </div>
+        <h3 class="font-extrabold text-xl mb-2">Made daily</h3>
+        <p class="text-sm text-gray-700">Fresh smoothies are blended that morning. Dried fruits and powders are batched weekly for peak freshness.</p>
+      </div>
+      <div class="bg-[var(--bg)] rounded-2xl border-2 border-black p-6 shadow-[4px_4px_0_var(--sky)]">
+        <div class="w-12 h-12 rounded-full bg-[var(--sky)] border-2 border-black flex items-center justify-center mb-4">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        </div>
+        <h3 class="font-extrabold text-xl mb-2">Local first</h3>
+        <p class="text-sm text-gray-700">We partner with West African and Mauritian farmers and agro-processors. Buying KCBlendz feeds the local food economy.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Reach -->
+<section class="max-w-7xl mx-auto px-4 py-14">
+  <p class="text-[var(--fuchsia)] uppercase tracking-widest text-xs font-extrabold mb-1 text-center">Our reach</p>
+  <h2 class="text-3xl md:text-4xl font-extrabold mb-8 text-center">Where you'll find us</h2>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+    <div class="bg-white rounded-2xl border-2 border-black p-6 text-center">
+      <div class="w-24 aspect-[3/2] mx-auto mb-4 rounded-lg overflow-hidden border-2 border-black">
+        <svg viewBox="0 0 60 40" preserveAspectRatio="none" class="w-full h-full">
+          <rect width="60" height="40" fill="#fff"/>
+          <rect width="20" height="40" fill="#008751"/>
+          <rect x="40" width="20" height="40" fill="#008751"/>
+        </svg>
+      </div>
+      <h3 class="font-extrabold text-xl mb-1">Nigeria</h3>
+      <p class="text-sm text-gray-600">Same-day Lagos delivery citywide. Pickup and partner kitchens. Currency: NGN ₦</p>
+    </div>
+    <div class="bg-white rounded-2xl border-2 border-black p-6 text-center">
+      <div class="w-24 aspect-[3/2] mx-auto mb-4 rounded-lg overflow-hidden border-2 border-black">
+        <svg viewBox="0 0 60 40" preserveAspectRatio="none" class="w-full h-full">
+          <rect y="0"  width="60" height="10" fill="#EA2839"/>
+          <rect y="10" width="60" height="10" fill="#1A206D"/>
+          <rect y="20" width="60" height="10" fill="#FFD500"/>
+          <rect y="30" width="60" height="10" fill="#00A551"/>
+        </svg>
+      </div>
+      <h3 class="font-extrabold text-xl mb-1">Mauritius</h3>
+      <p class="text-sm text-gray-600">Island operations producing fresh smoothies, sorbets and fruit salads. Currency: MUR Rs</p>
+    </div>
+    <div class="bg-white rounded-2xl border-2 border-black p-6 text-center">
+      <div class="w-24 aspect-[3/2] mx-auto mb-4 rounded-lg overflow-hidden border-2 border-black bg-gradient-to-br from-sky-400 to-indigo-700 flex items-center justify-center">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2 a 15 15 0 0 1 0 20 a 15 15 0 0 1 0 -20"/></svg>
+      </div>
+      <h3 class="font-extrabold text-xl mb-1">Global</h3>
+      <p class="text-sm text-gray-600">Dried fruits, fruit powders & teas shipped to wellness lovers worldwide. Currency: USD $</p>
+    </div>
+  </div>
+</section>
+
+<!-- Our Team (DB-driven so admin can edit) -->
+{% if team %}
+<section class="max-w-7xl mx-auto px-4 py-14">
+  <div class="text-center mb-10">
+    <p class="text-[var(--fuchsia)] uppercase tracking-widest text-xs font-extrabold mb-1">Our Team</p>
+    <h2 class="text-3xl md:text-4xl font-extrabold">The people behind every blend</h2>
+    <p class="text-gray-600 mt-2 max-w-2xl mx-auto">Small team, big standards. Each person here owns their craft end-to-end.</p>
+  </div>
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-5">
+    {% for m in team %}
+    <article class="bg-white rounded-2xl border-2 border-black p-4 shadow-[4px_4px_0_var(--lime)] text-center">
+      <div class="aspect-square rounded-2xl overflow-hidden border-2 border-black mb-3 bg-gray-100">
+        {% if m['avatar_url'] %}
+          <img src="{{ m['avatar_url'] }}" alt="{{ m['full_name'] }}" class="w-full h-full object-cover" loading="lazy">
+        {% else %}
+          <div class="w-full h-full bg-[var(--kc-green)] text-white flex items-center justify-center text-3xl font-extrabold">
+            {{ (m['full_name'] or '?')[:1] }}
+          </div>
+        {% endif %}
+      </div>
+      <h3 class="font-extrabold leading-tight">{{ m['full_name'] }}</h3>
+      <p class="text-[10px] uppercase tracking-widest font-bold text-[var(--fuchsia)] mt-0.5">{{ m['role'] }}</p>
+      {% if m['bio'] %}<p class="text-xs text-gray-600 mt-2 leading-relaxed">{{ m['bio'] }}</p>{% endif %}
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<section class="bg-[var(--lime)] border-y-2 border-black py-12">
+  <div class="max-w-3xl mx-auto px-4 text-center">
+    <h2 class="text-3xl md:text-4xl font-extrabold mb-3">Want to taste it for yourself?</h2>
+    <p class="text-gray-800 mb-6">Browse our menu or build a custom blend tuned to your body's needs.</p>
+    <div class="flex flex-wrap items-center justify-center gap-3">
+      <a href="{{ url_for('shop') }}" class="btn-fuchsia rounded-full px-6 py-3 font-extrabold uppercase tracking-wider text-sm border-2 border-black shadow-[4px_4px_0_#000]">Shop the menu</a>
+      <a href="{{ url_for('builder') }}" class="btn-dark rounded-full px-6 py-3 font-extrabold uppercase tracking-wider text-sm border-2 border-black shadow-[4px_4px_0_#000]">Build a blend</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

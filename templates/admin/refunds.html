@@ -1,0 +1,64 @@
+{% extends "admin/_layout.html" %}
+{% set active = 'refunds' %}
+{% block page_title %}Refund Queue{% endblock %}
+
+{% block admin_body %}
+{% set pending_count = (refunds | selectattr('status', 'equalto', 'pending') | list | length) %}
+<p class="text-sm text-gray-600 mb-4">{{ pending_count }} pending · {{ refunds|length }} total</p>
+
+<div class="space-y-3">
+  {% for r in refunds %}
+  <details class="bg-white border-2 border-black rounded-2xl shadow-[3px_3px_0_#000] {% if r['status'] == 'pending' %}ring-2 ring-amber-400{% endif %}" {% if r['status'] == 'pending' %}open{% endif %}>
+    <summary class="cursor-pointer p-4 flex items-center justify-between gap-4 list-none">
+      <div class="min-w-0">
+        <div class="flex items-center gap-2 flex-wrap">
+          <a href="{{ url_for('admin_order_detail', order_id=r['order_id']) }}" class="font-mono font-extrabold text-sm hover:underline">{{ r['order_number'] }}</a>
+          <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full
+            {% if r['status'] == 'pending' %}bg-amber-100 text-amber-800
+            {% elif r['status'] == 'approved' %}bg-sky-100 text-sky-800
+            {% elif r['status'] == 'refunded' %}bg-emerald-100 text-emerald-800
+            {% elif r['status'] == 'rejected' %}bg-rose-100 text-rose-800
+            {% endif %}">{{ r['status'] }}</span>
+        </div>
+        <p class="text-sm text-gray-600 truncate">{{ r['customer_name'] }} · {{ r['reason'] }}</p>
+        <p class="text-xs text-gray-500 mt-0.5">{{ format_money(r['total'], r['region']) }} · submitted {{ r['created_at'][:16] }}</p>
+      </div>
+      <svg class="shrink-0 text-gray-500" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </summary>
+
+    <div class="px-4 pb-4 space-y-3 border-t border-black/10 pt-3">
+      {% if r['details'] %}
+        <div>
+          <p class="text-[10px] uppercase tracking-widest font-bold text-gray-500">Customer note</p>
+          <p class="text-sm whitespace-pre-wrap">{{ r['details'] }}</p>
+        </div>
+      {% endif %}
+
+      {% if r['status'] == 'pending' or r['status'] == 'approved' %}
+        <form method="post" action="{{ url_for('admin_refund_resolve', rid=r['id']) }}" class="space-y-2">
+          <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+          <label class="block">
+            <span class="text-[10px] uppercase tracking-widest font-bold text-gray-500">Response to customer</span>
+            <textarea name="response" rows="2" required class="w-full border-2 border-black rounded-xl px-3 py-2 text-sm"></textarea>
+          </label>
+          <div class="flex flex-wrap items-center gap-2">
+            {% if r['status'] == 'pending' %}
+              <button name="action" value="approve" class="bg-sky-600 hover:bg-sky-700 text-white border-2 border-black rounded-full px-4 py-1.5 text-xs font-extrabold uppercase tracking-wider">Approve</button>
+              <button name="action" value="reject"  class="bg-rose-600 hover:bg-rose-700 text-white border-2 border-black rounded-full px-4 py-1.5 text-xs font-extrabold uppercase tracking-wider">Reject</button>
+            {% endif %}
+            <button name="action" value="mark_refunded" class="bg-emerald-600 hover:bg-emerald-700 text-white border-2 border-black rounded-full px-4 py-1.5 text-xs font-extrabold uppercase tracking-wider">Mark refunded</button>
+          </div>
+        </form>
+      {% else %}
+        {% if r['admin_response'] %}
+          <p class="text-xs text-gray-500"><span class="font-bold">Response:</span> {{ r['admin_response'] }}</p>
+        {% endif %}
+        <p class="text-xs text-gray-500">Resolved {{ r['resolved_at'][:16] if r['resolved_at'] }}</p>
+      {% endif %}
+    </div>
+  </details>
+  {% else %}
+    <p class="text-gray-500 italic">No refund requests. 🎉</p>
+  {% endfor %}
+</div>
+{% endblock %}

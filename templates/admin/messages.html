@@ -1,0 +1,36 @@
+{% extends "admin/_layout.html" %}
+{% set active = 'messages' %}
+{% block title %}Admin — Messages{% endblock %}
+{% block page_title %}Contact messages{% endblock %}
+
+{% block admin_body %}
+<div class="bg-white rounded-2xl border-2 border-black p-5">
+  <h2 class="text-base font-extrabold uppercase tracking-wider mb-4">All messages ({{ msgs|length }})</h2>
+  {% if msgs %}
+    <ul class="space-y-4">
+      {% for m in msgs %}
+      <li class="border-2 border-black rounded-xl p-4 bg-[var(--bg)] {% if not m['is_handled'] %}shadow-[4px_4px_0_var(--fuchsia)]{% endif %}">
+        <div class="flex items-start gap-3 flex-wrap mb-2">
+          <div class="flex-1 min-w-0">
+            <p class="font-extrabold">{{ m['subject'] or '(no subject)' }}</p>
+            <p class="text-sm">
+              <span class="font-bold">{{ m['name'] }}</span>
+              <span class="text-gray-500">· <a href="mailto:{{ m['email'] }}" class="link">{{ m['email'] }}</a></span>
+            </p>
+            <p class="text-[11px] uppercase tracking-widest font-bold text-gray-500 mt-0.5">{{ m['created_at'][:16] }}</p>
+          </div>
+          {% if m['is_handled'] %}
+            <span class="badge-square bg-[var(--lime)] text-black">Handled</span>
+          {% else %}
+            <span class="badge-square bg-[var(--yellow)] text-black">New</span>
+          {% endif %}
+        </div>
+        <p class="text-sm text-gray-800 mt-2 whitespace-pre-line">{{ m['message'] }}</p>
+      </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="text-sm text-gray-500 py-6 text-center">No messages yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

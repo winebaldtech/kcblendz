@@ -1,0 +1,79 @@
+{% extends "admin/_layout.html" %}
+{% set active = 'blogs' %}
+{% block title %}Admin — {{ 'Edit' if p else 'New' }} Post{% endblock %}
+{% block page_title %}{{ 'Edit post' if p else 'New post' }}{% endblock %}
+
+{% block admin_body %}
+<form method="post" enctype="multipart/form-data" class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+
+  <div class="lg:col-span-2 space-y-5">
+    <div class="bg-white rounded-2xl border-2 border-black p-5 space-y-4">
+      <div>
+        <label class="label">Title</label>
+        <input type="text" name="title" value="{{ p['title'] if p else '' }}" required class="input w-full text-lg font-bold">
+      </div>
+      <div>
+        <label class="label">Slug (auto if blank)</label>
+        <input type="text" name="slug" value="{{ p['slug'] if p else '' }}" class="input w-full font-mono">
+      </div>
+      <div>
+        <label class="label">Subtitle</label>
+        <input type="text" name="subtitle" value="{{ p['subtitle'] if p else '' }}" class="input w-full">
+      </div>
+      <div>
+        <label class="label">Content (markdown-style: <code class="text-xs">##</code> headings, <code class="text-xs">- </code> bullets, blank lines = paragraphs)</label>
+        <textarea name="content" rows="20" required class="input w-full font-mono text-sm leading-relaxed">{{ p['content'] if p else '' }}</textarea>
+      </div>
+    </div>
+  </div>
+
+  <aside class="space-y-5">
+    <div class="bg-white rounded-2xl border-2 border-black p-5 space-y-4">
+      <h2 class="text-base font-extrabold uppercase tracking-wider">Meta</h2>
+      <div>
+        <label class="label">Category</label>
+        <select name="category" class="input w-full">
+          {% for c in ['NUTRITION', 'LIFESTYLE', 'RECIPE', 'WELLNESS'] %}
+            <option value="{{ c }}" {% if p and p['category']==c %}selected{% endif %}>{{ c|capitalize }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="label">Author</label>
+        <input type="text" name="author" value="{{ p['author'] if p else 'KC Team' }}" class="input w-full">
+      </div>
+      <div>
+        <label class="label">Read time (minutes)</label>
+        <input type="number" name="read_minutes" value="{{ p['read_minutes'] if p else 4 }}" class="input w-full">
+      </div>
+      <label class="flex items-center gap-2 text-sm pt-2">
+        <input type="checkbox" name="is_published" {% if (p and p['is_published']) or not p %}checked{% endif %} class="w-4 h-4 accent-[var(--fuchsia)]">
+        Published
+      </label>
+    </div>
+
+    <div class="bg-white rounded-2xl border-2 border-black p-5 space-y-3">
+      <h2 class="text-base font-extrabold uppercase tracking-wider">Cover image</h2>
+      <div>
+        <label class="label">URL</label>
+        <input type="url" name="cover_url" value="{{ p['cover_url'] if p else '' }}" class="input w-full">
+      </div>
+      <div>
+        <label class="label">Or upload</label>
+        <input type="file" name="cover_file" accept="image/*" class="input w-full file:mr-3 file:py-1.5 file:px-3 file:rounded-full file:border-2 file:border-black file:bg-[var(--lime)] file:font-bold file:text-xs file:cursor-pointer">
+      </div>
+      {% if p and p['cover_url'] %}
+      <div class="aspect-video rounded-xl border-2 border-black overflow-hidden">
+        <img src="{{ p['cover_url'] }}" alt="" class="w-full h-full object-cover">
+      </div>
+      {% endif %}
+    </div>
+
+    <button type="submit" class="btn-fuchsia rounded-full w-full py-3 font-extrabold uppercase tracking-wider text-sm border-2 border-black shadow-[4px_4px_0_#000]">
+      {{ 'Save changes' if p else 'Publish post' }}
+    </button>
+    <a href="{{ url_for('admin_blogs') }}" class="block text-center text-sm font-bold uppercase tracking-wider hover:text-[var(--fuchsia)]">Cancel</a>
+  </aside>
+</form>
+{% endblock %}

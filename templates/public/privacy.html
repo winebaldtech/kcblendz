@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Privacy Policy — KCBlendz{% endblock %}
+
+{% block content %}
+<section class="max-w-3xl mx-auto px-4 py-12">
+  <p class="text-[var(--fuchsia)] uppercase tracking-widest text-xs font-extrabold mb-2">Legal</p>
+  <h1 class="text-4xl font-extrabold mb-2">Privacy Policy</h1>
+  <p class="text-sm text-gray-500 mb-8">Last updated: {{ current_year }}</p>
+
+  <div class="prose max-w-none space-y-5 text-gray-700">
+    <p>KCBlendz (“we”, “our”, “us”) respects your privacy. This policy explains what personal information we collect, how we use it, and the choices you have.</p>
+
+    <h2 class="text-xl font-extrabold text-black mt-6">Information we collect</h2>
+    <p>We collect information you provide directly — name, email, phone, delivery address, payment details — when you create an account, place an order, or contact us. We also collect technical information such as IP address, browser type, and how you use our site, primarily for security and analytics.</p>
+
+    <h2 class="text-xl font-extrabold text-black mt-6">How we use it</h2>
+    <ul class="list-disc pl-6 space-y-1">
+      <li>To fulfil and deliver your orders.</li>
+      <li>To communicate order status, customer service, and (with your consent) marketing.</li>
+      <li>To improve our products, website and service quality.</li>
+      <li>To prevent fraud and comply with legal obligations.</li>
+    </ul>
+
+    <h2 class="text-xl font-extrabold text-black mt-6">Sharing</h2>
+    <p>We never sell your data. We share information with trusted service providers (payment processors like Paystack and PayPal, delivery partners, email and SMS providers) strictly to deliver our services. We may disclose information when required by law.</p>
+
+    <h2 class="text-xl font-extrabold text-black mt-6">Your rights</h2>
+    <p>You may request access, correction, or deletion of your personal data at any time by contacting <a class="link" href="mailto:hello@kcblendz.com">hello@kcblendz.com</a>. You can also unsubscribe from marketing emails using the link in any of our messages.</p>
+
+    <h2 class="text-xl font-extrabold text-black mt-6">Cookies</h2>
+    <p>We use cookies and similar technologies to keep you signed in, remember your store region, hold your cart, and measure site performance. You can disable cookies in your browser, but parts of the site may not function correctly.</p>
+
+    <h2 class="text-xl font-extrabold text-black mt-6">Children</h2>
+    <p>Our services are not directed at children under 13. If we learn that we have collected personal information from a child under 13 without parental consent, we will delete it.</p>
+
+    <h2 class="text-xl font-extrabold text-black mt-6">Contact</h2>
+    <p>For privacy questions, write to us at <a class="link" href="mailto:hello@kcblendz.com">hello@kcblendz.com</a> or call <a class="link" href="tel:+2348024655191">+234 802 4655 191</a>.</p>
+  </div>
+</section>
+{% endblock %}

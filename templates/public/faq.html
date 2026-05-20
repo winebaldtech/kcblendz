@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}FAQ — KCBlendz{% endblock %}
+
+{% block content %}
+<section class="bg-[var(--dark)] text-white border-b-2 border-black">
+  <div class="max-w-7xl mx-auto px-4 py-14 text-center">
+    <p class="text-[var(--lime)] uppercase tracking-[0.3em] text-xs font-extrabold mb-2">Help center</p>
+    <h1 class="text-4xl md:text-5xl font-extrabold">Frequently asked questions</h1>
+    <p class="text-gray-300 mt-3 max-w-xl mx-auto">Browse by topic or use the search.
+      Still stuck? <a href="{{ url_for('contact') }}" class="text-[var(--lime)] underline">Send us a message</a>.</p>
+
+    <!-- Quick search (client-side filter) -->
+    <div class="max-w-md mx-auto mt-6">
+      <div class="flex w-full border-2 border-white/30 rounded-full overflow-hidden bg-white/10 focus-within:border-[var(--lime)]">
+        <input type="search" id="faq-q" placeholder="Search questions..."
+               class="flex-1 px-4 py-2 outline-none text-sm bg-transparent text-white placeholder-white/50">
+        <span class="px-4 flex items-center text-white/60" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </span>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# Tabs — show only categories that have content #}
+{% set tab_meta = {
+  'customers': {'label': 'Customers',  'desc': 'Orders, delivery, payments, refunds.'},
+  'team':      {'label': 'Our Team',   'desc': 'Who we are, sourcing, hiring.'},
+  'insights':  {'label': 'Insights',   'desc': 'Nutrition, science, smoothie know-how.'}
+} %}
+
+<section class="max-w-4xl mx-auto px-4 py-10">
+  <div class="flex flex-wrap gap-2 mb-8 border-b-2 border-[var(--kc-dark)]/15" role="tablist" aria-label="FAQ categories">
+    {% for cat, meta in tab_meta.items() if faq_groups.get(cat) %}
+      <button type="button"
+              data-faq-tab="{{ cat }}"
+              class="faq-tab px-5 py-3 text-sm font-extrabold uppercase tracking-wider border-2 border-b-0 border-transparent rounded-t-xl -mb-[2px] transition
+                     {% if loop.first %}faq-tab-active border-[var(--kc-dark)] bg-[var(--kc-yellow)]/40 text-[var(--kc-dark)]{% else %}text-gray-500 hover:text-[var(--kc-dark)]{% endif %}"
+              role="tab"
+              aria-selected="{{ 'true' if loop.first else 'false' }}"
+              aria-controls="faq-panel-{{ cat }}">
+        {{ meta.label }}
+        <span class="ml-1 text-xs text-gray-500 font-bold">({{ faq_groups[cat]|length }})</span>
+      </button>
+    {% endfor %}
+  </div>
+
+  <div id="faq-no-results" class="hidden text-center py-12 text-gray-500">
+    <p class="text-lg font-bold">No questions match that search.</p>
+    <p class="text-sm mt-1">Try a different keyword — or <a href="{{ url_for('contact') }}" class="text-[var(--fuchsia)] underline">ask us directly</a>.</p>
+  </div>
+
+  {% for cat, meta in tab_meta.items() %}
+    {% if faq_groups.get(cat) %}
+    <div id="faq-panel-{{ cat }}"
+         data-faq-panel="{{ cat }}"
+         role="tabpanel"
+         class="space-y-3 {% if not loop.first %}hidden{% endif %}">
+      <p class="text-sm text-gray-600 mb-2">{{ meta.desc }}</p>
+      {% for f in faq_groups[cat] %}
+        <details class="faq-item bg-white border-2 border-[var(--kc-dark)] rounded-xl shadow-[3px_3px_0_var(--kc-dark)] group"
+                 data-q="{{ f['question']|lower }}" data-a="{{ f['answer']|lower }}">
+          <summary class="list-none cursor-pointer px-5 py-4 flex items-center justify-between gap-3 select-none">
+            <span class="font-extrabold text-base md:text-lg">{{ f['question'] }}</span>
+            <svg class="shrink-0 text-[var(--kc-orange)] transition-transform group-open:rotate-45" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </summary>
+          <div class="px-5 pb-5 text-sm text-gray-700 leading-relaxed">{{ f['answer'] }}</div>
+        </details>
+      {% endfor %}
+    </div>
+    {% endif %}
+  {% endfor %}
+</section>
+
+<script>
+(function(){
+  // ─── Tab switching
+  var tabs   = document.querySelectorAll('[data-faq-tab]');
+  var panels = document.querySelectorAll('[data-faq-panel]');
+  function setActive(cat){
+    tabs.forEach(function(t){
+      var on = t.dataset.faqTab === cat;
+      t.classList.toggle('faq-tab-active', on);
+      t.classList.toggle('border-[var(--kc-dark)]', on);
+      t.classList.toggle('bg-[var(--kc-yellow)]/40', on);
+      t.classList.toggle('text-[var(--kc-dark)]', on);
+      t.classList.toggle('text-gray-500', !on);
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    panels.forEach(function(p){ p.classList.toggle('hidden', p.dataset.faqPanel !== cat); });
+  }
+  tabs.forEach(function(t){ t.addEventListener('click', function(){ setActive(t.dataset.faqTab); }); });
+
+  // ─── Search across all categories (overrides tabs when query non-empty)
+  var q = document.getElementById('faq-q');
+  var noRes = document.getElementById('faq-no-results');
+  q.addEventListener('input', function(){
+    var s = q.value.trim().toLowerCase();
+    var anyMatch = false;
+    if (!s){
+      // Reset to tab-based view
+      panels.forEach(function(p){ p.classList.toggle('hidden', !panels[0].isSameNode(p) && !p.classList.contains('hidden')); });
+      var active = document.querySelector('[data-faq-tab].faq-tab-active') || tabs[0];
+      if (active) setActive(active.dataset.faqTab);
+      document.querySelectorAll('.faq-item').forEach(function(d){ d.classList.remove('hidden'); d.removeAttribute('open'); });
+      noRes.classList.add('hidden');
+      return;
+    }
+    // Show all panels when searching
+    panels.forEach(function(p){ p.classList.remove('hidden'); });
+    document.querySelectorAll('.faq-item').forEach(function(d){
+      var hit = d.dataset.q.indexOf(s) >= 0 || d.dataset.a.indexOf(s) >= 0;
+      d.classList.toggle('hidden', !hit);
+      if (hit) anyMatch = true;
+      if (hit) d.setAttribute('open',''); else d.removeAttribute('open');
+    });
+    noRes.classList.toggle('hidden', anyMatch);
+  });
+})();
+</script>
+{% endblock %}

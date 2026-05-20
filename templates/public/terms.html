@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Terms of Service — KCBlendz{% endblock %}
+
+{% block content %}
+<section class="max-w-3xl mx-auto px-4 py-12">
+  <p class="text-[var(--fuchsia)] uppercase tracking-widest text-xs font-extrabold mb-2">Legal</p>
+  <h1 class="text-4xl font-extrabold mb-2">Terms of Service</h1>
+  <p class="text-sm text-gray-500 mb-8">Last updated: {{ current_year }}</p>
+
+  <div class="prose max-w-none space-y-5 text-gray-700">
+    <p>Welcome to KCBlendz. By using our website and services, you agree to these Terms. Please read them carefully.</p>
+
+    <h2 class="text-xl font-extrabold text-black mt-6">Use of the site</h2>
+    <p>You agree to use our website lawfully and not to attempt to gain unauthorised access to our systems, disrupt service, or scrape content for commercial use without our consent.</p>
+
+    <h2 class="text-xl font-extrabold text-black mt-6">Accounts</h2>
+    <p>You are responsible for safeguarding your account credentials. You must notify us immediately of any unauthorised use. We may suspend accounts that violate these Terms.</p>
+
+    <h2 class="text-xl font-extrabold text-black mt-6">Products and pricing</h2>
+    <p>Prices, availability and product details are subject to change without notice. We do our best to ensure accuracy but errors do occur — we reserve the right to correct any pricing or descriptive errors and to cancel any order in such cases with a full refund.</p>
+
+    <h2 class="text-xl font-extrabold text-black mt-6">Orders and payment</h2>
+    <p>Your order constitutes an offer to purchase. We reserve the right to accept or decline orders for any reason. Payment is processed at checkout via our payment partners (Paystack in Nigeria; PayPal for Mauritius and Global; bank transfer everywhere). Once payment is verified, your order is confirmed.</p>
+
+    <h2 class="text-xl font-extrabold text-black mt-6">Delivery</h2>
+    <p>Delivery times are estimates. We aren't liable for delays caused by third-party couriers, weather, customs (international shipments), or events outside our control.</p>
+
+    <h2 class="text-xl font-extrabold text-black mt-6">Intellectual property</h2>
+    <p>All content on this site — text, images, logos, recipes, design — is the property of KCBlendz unless otherwise noted, and may not be reproduced without permission.</p>
+
+    <h2 class="text-xl font-extrabold text-black mt-6">Limitation of liability</h2>
+    <p>To the maximum extent permitted by law, KCBlendz is not liable for indirect, incidental, or consequential damages arising from use of our website or products. Our total liability is limited to the value of your most recent order.</p>
+
+    <h2 class="text-xl font-extrabold text-black mt-6">Changes</h2>
+    <p>We may update these Terms periodically. Continued use of the site after changes constitutes acceptance.</p>
+
+    <h2 class="text-xl font-extrabold text-black mt-6">Contact</h2>
+    <p>Questions about these Terms? Email <a class="link" href="mailto:hello@kcblendz.com">hello@kcblendz.com</a>.</p>
+  </div>
+</section>
+{% endblock %}

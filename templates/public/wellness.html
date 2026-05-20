@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block title %}Wellness Hub — KCBlendz{% endblock %}
+
+{% block content %}
+<section class="bg-[var(--dark)] text-white border-b-2 border-black">
+  <div class="max-w-7xl mx-auto px-4 py-12 md:py-16">
+    <p class="text-[var(--lime)] uppercase tracking-[0.3em] text-xs font-extrabold mb-2">The Wellness Hub</p>
+    <h1 class="text-4xl md:text-6xl font-extrabold leading-tight max-w-2xl">Real food, real science, real glow.</h1>
+    <p class="text-gray-300 mt-4 max-w-xl">Recipes, ingredient deep-dives, and wellness rituals from our team. No fads — just what actually works.</p>
+
+    <!-- Search -->
+    <form action="{{ url_for('wellness') }}" method="get" class="mt-6 max-w-xl">
+      <div class="flex w-full border-2 border-white rounded-full overflow-hidden bg-white">
+        {% if active_cat %}<input type="hidden" name="cat" value="{{ active_cat }}">{% endif %}
+        <input type="search" name="q" value="{{ q }}"
+               placeholder="Search articles, ingredients, recipes..."
+               class="flex-1 px-4 py-2 outline-none text-sm text-[var(--kc-dark)]">
+        <button type="submit" class="btn-orange px-5 text-white font-extrabold uppercase tracking-wider text-xs" aria-label="Search">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </button>
+      </div>
+    </form>
+  </div>
+</section>
+
+<section class="max-w-7xl mx-auto px-4 py-10">
+  <div class="grid lg:grid-cols-[1fr_280px] gap-8">
+    <!-- Main -->
+    <div>
+      {# Category pills (DB-driven) #}
+      {% if cats %}
+      <div class="flex items-center gap-2 mb-6 flex-wrap">
+        <a href="{{ url_for('wellness', q=q or none) }}"
+           class="px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-full border-2 border-[var(--kc-dark)] transition
+                  {% if not active_cat %}bg-[var(--kc-dark)] text-white{% else %}bg-white hover:bg-[var(--kc-yellow)]{% endif %}">
+          All
+        </a>
+        {% for c in cats %}
+          <a href="{{ url_for('wellness', cat=c['category'], q=q or none) }}"
+             class="px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-full border-2 border-[var(--kc-dark)] transition
+                    {% if active_cat == c['category'] %}bg-[var(--kc-dark)] text-white{% else %}bg-white hover:bg-[var(--kc-yellow)]{% endif %}">
+            {{ c['category'] }} <span class="opacity-60">({{ c['n'] }})</span>
+          </a>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if q or active_cat %}
+        <p class="text-sm text-gray-600 mb-4">
+          {{ posts|length }} {{ 'article' if posts|length == 1 else 'articles' }}
+          {% if q %}matching "<span class="font-bold">{{ q }}</span>"{% endif %}
+          {% if active_cat %}in <span class="font-bold">{{ active_cat }}</span>{% endif %}
+        </p>
+      {% endif %}
+
+      {% if posts %}
+        {# Featured / hero — only when not filtering #}
+        {% if not q and not active_cat %}
+          {% set hero = posts[0] %}
+          <a href="{{ url_for('wellness_post', slug=hero['slug']) }}" class="card-market block bg-white rounded-2xl border-2 border-black overflow-hidden mb-8 grid grid-cols-1 md:grid-cols-2 min-h-[280px]">
+            <div class="aspect-video md:aspect-auto bg-gray-200">
+              {% if hero['cover_url'] %}<img src="{{ hero['cover_url'] }}" alt="{{ hero['title'] }}" class="w-full h-full object-cover" loading="lazy">{% endif %}
+            </div>
+            <div class="p-6 md:p-8 flex flex-col justify-center">
+              <div class="flex items-center gap-2 mb-3">
+                <span class="badge-square bg-[var(--fuchsia)] text-white">Featured</span>
+                {% if hero['category'] %}<span class="badge-square bg-[var(--lime)] text-black">{{ hero['category'] }}</span>{% endif %}
+              </div>
+              <h2 class="text-2xl md:text-3xl font-extrabold leading-tight mb-3">{{ hero['title'] }}</h2>
+              <p class="text-gray-600 text-sm mb-4 line-clamp-3">{{ hero['subtitle'] }}</p>
+              <p class="text-xs uppercase tracking-widest font-bold text-gray-500">{{ hero['author'] }} · {{ hero['read_minutes'] }} min read</p>
+            </div>
+          </a>
+          {% set rest = posts[1:] %}
+        {% else %}
+          {% set rest = posts %}
+        {% endif %}
+
+        {% if rest %}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {% for p in rest %}
+          <a href="{{ url_for('wellness_post', slug=p['slug']) }}" class="card-market block bg-white rounded-2xl border-2 border-black overflow-hidden transition hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--kc-dark)]">
+            <div class="aspect-video bg-gray-200">
+              {% if p['cover_url'] %}<img src="{{ p['cover_url'] }}" alt="{{ p['title'] }}" class="w-full h-full object-cover" loading="lazy">{% endif %}
+            </div>
+            <div class="p-4">
+              {% if p['category'] %}<span class="badge-square bg-[var(--lime)] text-black mb-2">{{ p['category'] }}</span>{% endif %}
+              <h3 class="font-extrabold text-base leading-snug mb-2 line-clamp-2">{{ p['title'] }}</h3>
+              {% if p['subtitle'] %}<p class="text-xs text-gray-600 line-clamp-2 mb-2">{{ p['subtitle'] }}</p>{% endif %}
+              <p class="text-[11px] uppercase tracking-widest font-bold text-gray-500">{{ p['author'] }} · {{ p['read_minutes'] }} min</p>
+            </div>
+          </a>
+          {% endfor %}
+        </div>
+        {% endif %}
+      {% else %}
+        <div class="bg-white rounded-2xl border-2 border-black p-12 text-center">
+          <h2 class="text-xl font-extrabold mb-2">
+            {% if q or active_cat %}No matches{% else %}No articles yet{% endif %}
+          </h2>
+          <p class="text-gray-600">
+            {% if q or active_cat %}Try a different search or clear the filter.
+            <a href="{{ url_for('wellness') }}" class="text-[var(--fuchsia)] font-bold underline">See all articles</a>
+            {% else %}Check back soon for our latest wellness reads.{% endif %}
+          </p>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Sidebar: trending -->
+    <aside class="space-y-6">
+      {% if trending %}
+      <div class="bg-white border-2 border-[var(--kc-dark)] rounded-2xl p-5 shadow-[4px_4px_0_var(--lime)]">
+        <p class="text-[var(--fuchsia)] uppercase tracking-widest text-[10px] font-extrabold mb-3 flex items-center gap-1.5">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+          Trending now
+        </p>
+        <ol class="space-y-3">
+          {% for p in trending %}
+          <li class="flex gap-3">
+            <span class="text-2xl font-extrabold text-[var(--kc-yellow)] leading-none">{{ "%02d" % loop.index }}</span>
+            <a href="{{ url_for('wellness_post', slug=p['slug']) }}" class="font-bold text-sm leading-snug hover:underline line-clamp-2">
+              {{ p['title'] }}
+            </a>
+          </li>
+          {% endfor %}
+        </ol>
+      </div>
+      {% endif %}
+
+      <div class="bg-[var(--kc-yellow)]/30 border-2 border-[var(--kc-dark)] rounded-2xl p-5">
+        <h3 class="font-extrabold text-lg leading-tight mb-1">Get fresh reads weekly</h3>
+        <p class="text-xs text-gray-700 mb-3">Sunday brunch reading. No spam.</p>
+        <form action="{{ url_for('newsletter_subscribe') }}" method="post" class="space-y-2">
+          <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+          <input type="email" name="email" required placeholder="you@email.com"
+                 class="w-full border-2 border-[var(--kc-dark)] rounded-full px-4 py-2 text-sm">
+          <button class="w-full btn-orange border-2 border-[var(--kc-dark)] rounded-full py-2 text-xs font-extrabold uppercase tracking-wider">Subscribe</button>
+        </form>
+      </div>
+    </aside>
+  </div>
+</section>
+{% endblock %}

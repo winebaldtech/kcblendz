@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Notifications — KCBlendz{% endblock %}
+{% set active = 'notifications' %}
+
+{% block content %}
+<section class="max-w-7xl mx-auto px-4 py-8">
+  <h1 class="text-3xl md:text-4xl font-extrabold mb-6">Notifications</h1>
+
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    {% include 'account/_sidebar.html' %}
+
+    <div class="lg:col-span-9">
+      <div class="bg-white rounded-2xl border-2 border-black overflow-hidden">
+        {% if notifs %}
+          <ul class="divide-y-2 divide-dashed divide-gray-200">
+            {% for n in notifs %}
+            <li class="p-4 flex items-start gap-3 hover:bg-[var(--lime)]/10">
+              <span class="w-2 h-2 mt-2 rounded-full {% if n['is_read'] %}bg-gray-300{% else %}bg-[var(--fuchsia)]{% endif %} shrink-0"></span>
+              <div class="flex-1 min-w-0">
+                <p class="font-bold">{{ n['title'] }}</p>
+                {% if n['body'] %}<p class="text-sm text-gray-600 mt-0.5">{{ n['body'] }}</p>{% endif %}
+                <p class="text-[10px] uppercase tracking-widest font-bold text-gray-500 mt-1">{{ n['created_at'][:16] }}</p>
+              </div>
+              {% if n['link'] %}
+              <a href="{{ n['link'] }}" class="text-xs font-bold uppercase tracking-wider hover:text-[var(--fuchsia)] shrink-0">Open</a>
+              {% endif %}
+            </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <div class="p-10 text-center">
+            <p class="text-gray-600">You're all caught up — no notifications yet.</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% block title %}{{ p['name'] }} — KCBlendz{% endblock %}
+{% block description %}{{ p['short_description'] or p['description'] }}{% endblock %}
+
+{% block content %}
+{% set u = current_user() %}
+{% set is_fav = p['id'] in user_favorite_ids %}
+<section class="max-w-7xl mx-auto px-4 py-6">
+  <!-- Breadcrumb -->
+  <nav class="text-xs text-gray-500 uppercase tracking-widest font-bold mb-4">
+    <a class="hover:text-[var(--kc-orange)]" href="{{ url_for('home') }}">Home</a> /
+    <a class="hover:text-[var(--kc-orange)]" href="{{ url_for('shop') }}">Shop</a> /
+    {% if p['category_slug'] %}<a class="hover:text-[var(--kc-orange)]" href="{{ url_for('shop', category=p['category_slug']) }}">{{ p['category_name'] }}</a> /{% endif %}
+    <span class="text-[var(--kc-dark)]">{{ p['name'] }}</span>
+  </nav>
+
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+    <!-- Image -->
+    <div class="lg:col-span-6">
+      <div class="bg-white rounded-2xl border-2 border-[var(--kc-dark)] overflow-hidden aspect-square relative">
+        <img src="{{ p['image_url'] or url_for('static', filename='img/custom-cup.svg') }}" alt="{{ p['name'] }}" class="w-full h-full object-cover">
+        <!-- Favorite floating button -->
+        <form action="{{ url_for('favorite_toggle', pid=p['id']) }}" method="post" class="absolute top-4 right-4">
+          <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+          <button type="submit" class="fav-btn {{ 'favorited' if is_fav }} w-12 h-12 rounded-full bg-white border-2 border-[var(--kc-dark)] shadow-[3px_3px_0_var(--kc-dark)] hover:scale-105 transition flex items-center justify-center" aria-label="{{ 'Remove from favorites' if is_fav else 'Add to favorites' }}" title="{{ 'Remove from favorites' if is_fav else 'Add to favorites' }}">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="{{ 'currentColor' if is_fav else 'none' }}" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="{{ 'color: var(--kc-orange);' if is_fav else 'color: var(--kc-dark);' }}"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Info -->
+    <div class="lg:col-span-6">
+      <div class="flex items-center gap-2 mb-3">
+        {% if p['is_bestseller'] %}<span class="badge-square bg-[var(--kc-orange)] text-white">Bestseller</span>{% endif %}
+        {% if p['is_new'] %}<span class="badge-square bg-[var(--kc-yellow)] text-[var(--kc-dark)]">New</span>{% endif %}
+        {% if p['is_featured'] %}<span class="badge-square bg-[var(--kc-green)] text-white">Featured</span>{% endif %}
+        {% if p['category_name'] %}<span class="badge-square bg-white border border-[var(--kc-dark)]">{{ p['category_name'] }}</span>{% endif %}
+      </div>
+
+      <h1 class="text-3xl md:text-5xl font-extrabold leading-tight mb-3 text-[var(--kc-dark)]">{{ p['name'] }}</h1>
+
+      <!-- Rating summary -->
+      {% if rating_stats and rating_stats['n'] %}
+      {% set avg = rating_stats['avg_rating'] %}
+      <a href="#reviews" class="flex items-center gap-2 mb-4 hover:opacity-80 transition">
+        <span class="flex">
+          {% for i in range(1, 6) %}
+            {% if i <= avg|round(0, 'floor')|int %}
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--kc-yellow)" stroke="var(--kc-yellow)" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            {% else %}
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d4d6d0" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            {% endif %}
+          {% endfor %}
+        </span>
+        <span class="text-sm font-bold text-[var(--kc-dark)]">{{ '%.1f' % avg }}</span>
+        <span class="text-xs text-gray-500">· {{ rating_stats['n'] }} review{{ 's' if rating_stats['n'] != 1 }}</span>
+      </a>
+      {% endif %}
+
+      <p class="text-3xl font-extrabold text-[var(--kc-orange)] mb-5">{{ format_money(p[price_field], current_region()) }}</p>
+
+      {% if p['short_description'] %}
+        <p class="text-base text-gray-700 mb-5 leading-relaxed">{{ p['short_description'] }}</p>
+      {% endif %}
+
+      {% if p['description'] %}
+        <p class="text-sm text-gray-600 mb-6 leading-relaxed whitespace-pre-line">{{ p['description'] }}</p>
+      {% endif %}
+
+      <!-- Add to cart -->
+      <form action="{{ url_for('cart_add') }}" method="post" class="bg-white border-2 border-[var(--kc-dark)] rounded-2xl p-4 mb-6">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <input type="hidden" name="product_id" value="{{ p['id'] }}">
+        <div class="flex flex-wrap items-end gap-3">
+          <div>
+            <label class="label">Quantity</label>
+            <input type="number" name="quantity" value="1" min="1" max="20" class="input w-24">
+          </div>
+          <button type="submit" class="btn-orange flex-1 rounded-full px-6 py-3 font-extrabold uppercase tracking-wider text-sm border-2 border-[var(--kc-dark)] shadow-[4px_4px_0_var(--kc-dark)] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_var(--kc-dark)] transition">Add to cart</button>
+        </div>
+      </form>
+
+      <!-- Trust badges -->
+      <div class="grid grid-cols-3 gap-3 text-center text-xs">
+        <div class="bg-white border-2 border-[var(--kc-dark)] rounded-xl p-3"><svg class="mx-auto mb-1 text-[var(--kc-green)]" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12l5 5L20 7"/></svg><p class="font-bold">Real fruit</p><p class="text-gray-500">Guaranteed</p></div>
+        <div class="bg-white border-2 border-[var(--kc-dark)] rounded-xl p-3"><svg class="mx-auto mb-1 text-[var(--kc-green)]" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><p class="font-bold">Made today</p><p class="text-gray-500">Fresh blend</p></div>
+        <div class="bg-white border-2 border-[var(--kc-dark)] rounded-xl p-3"><svg class="mx-auto mb-1 text-[var(--kc-green)]" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><p class="font-bold">Secure pay</p><p class="text-gray-500">SSL · PCI</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Reviews section ─── -->
+  <section id="reviews" class="mt-16 scroll-mt-24">
+    <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+      <div>
+        <p class="text-xs uppercase tracking-[0.3em] text-[var(--kc-green)] font-extrabold">What customers say</p>
+        <h2 class="brand text-3xl md:text-4xl">Reviews{% if rating_stats and rating_stats['n'] %} <span class="text-[var(--kc-orange)]">·</span> <span class="text-[var(--kc-dark)]">{{ rating_stats['n'] }}</span>{% endif %}</h2>
+      </div>
+      {% if rating_stats and rating_stats['n'] %}
+      <div class="bg-white border-2 border-[var(--kc-dark)] rounded-2xl px-5 py-3 shadow-[3px_3px_0_var(--kc-yellow)]">
+        <p class="text-3xl font-extrabold text-[var(--kc-dark)]">{{ '%.1f' % rating_stats['avg_rating'] }} <span class="text-base text-gray-500 font-bold">/ 5</span></p>
+        <p class="text-xs text-gray-500">{{ rating_stats['n'] }} verified review{{ 's' if rating_stats['n'] != 1 }}</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Review list -->
+      <div class="lg:col-span-2 space-y-4">
+        {% if reviews %}
+          {% for r in reviews %}
+          <article class="bg-white border-2 border-[var(--kc-dark)] rounded-2xl p-5">
+            <header class="flex items-start justify-between mb-2 flex-wrap gap-2">
+              <div>
+                <p class="font-extrabold text-[var(--kc-dark)]">{{ r['author_name'] }}
+                  {% if r['is_verified_buyer'] %}<span class="inline-flex items-center gap-1 text-[10px] uppercase tracking-widest font-bold text-[var(--kc-green)] ml-2"><svg width="11" height="11" viewBox="0 0 24 24" fill="var(--kc-green)" stroke="white" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Verified buyer</span>{% endif %}
+                </p>
+                <span class="flex mt-0.5">
+                  {% for i in range(1, 6) %}
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="{{ 'var(--kc-yellow)' if i <= r['rating'] else 'none' }}" stroke="{{ 'var(--kc-yellow)' if i <= r['rating'] else '#d4d6d0' }}" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                  {% endfor %}
+                </span>
+              </div>
+              <time class="text-xs text-gray-500">{{ r['created_at'][:10] }}</time>
+            </header>
+            {% if r['title'] %}<p class="font-bold text-[var(--kc-dark)] mb-1">{{ r['title'] }}</p>{% endif %}
+            <p class="text-sm text-gray-700 leading-relaxed">{{ r['body'] }}</p>
+          </article>
+          {% endfor %}
+        {% else %}
+          <div class="bg-white border-2 border-dashed border-[var(--kc-dark)]/30 rounded-2xl p-8 text-center">
+            <svg class="mx-auto mb-3 text-[var(--kc-green)]" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            <p class="font-bold text-[var(--kc-dark)]">No reviews yet</p>
+            <p class="text-sm text-gray-500 mt-1">Be the first to share your experience.</p>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Write a review form -->
+      <aside class="bg-[var(--kc-cream)] border-2 border-[var(--kc-dark)] rounded-2xl p-5 shadow-[4px_4px_0_var(--kc-yellow)] h-fit">
+        <h3 class="brand text-xl mb-3">Share your experience</h3>
+        <form action="{{ url_for('submit_review', slug=p['slug']) }}" method="post" class="space-y-3">
+          <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+
+          <!-- Star picker -->
+          <div>
+            <label class="label">Your rating</label>
+            <div class="flex gap-1" id="rating-picker">
+              {% for i in range(1, 6) %}
+              <label class="cursor-pointer">
+                <input type="radio" name="rating" value="{{ i }}" class="sr-only peer" required>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#d4d6d0" stroke-width="1.5" class="peer-checked:fill-[var(--kc-yellow)] peer-checked:stroke-[var(--kc-yellow)] hover:stroke-[var(--kc-yellow)] transition" data-star="{{ i }}"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+
+          {% if not u %}
+          <div>
+            <label class="label">Your name</label>
+            <input type="text" name="author_name" required maxlength="80" class="input w-full">
+          </div>
+          {% endif %}
+
+          <div>
+            <label class="label">Title (optional)</label>
+            <input type="text" name="title" maxlength="140" class="input w-full" placeholder="Summarise in a few words">
+          </div>
+
+          <div>
+            <label class="label">Your review</label>
+            <textarea name="body" required maxlength="2000" rows="4" class="input w-full" placeholder="What did you love? Anything that could be better?"></textarea>
+          </div>
+
+          <button type="submit" class="btn-orange w-full rounded-full py-2.5 font-extrabold uppercase tracking-wider text-xs border-2 border-[var(--kc-dark)] shadow-[3px_3px_0_var(--kc-dark)]">Submit review</button>
+        </form>
+      </aside>
+    </div>
+  </section>
+
+  <!-- Related products -->
+  {% if related %}
+  <section class="mt-16">
+    <h2 class="brand text-3xl mb-6">You might also like</h2>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {% for r in related %}
+        {% include 'public/_product_card.html' with context %}
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+</section>
+
+<script>
+  // Color stars on hover/click
+  document.querySelectorAll('#rating-picker label').forEach((lab, idx) => {
+    const stars = lab.parentElement.querySelectorAll('svg');
+    const radio = lab.querySelector('input');
+    lab.addEventListener('mouseenter', () => stars.forEach((s,i) => {
+      if (i <= idx) { s.setAttribute('fill','var(--kc-yellow)'); s.setAttribute('stroke','var(--kc-yellow)'); }
+      else          { s.setAttribute('fill','none');             s.setAttribute('stroke','#d4d6d0'); }
+    }));
+    radio.addEventListener('change', () => stars.forEach((s,i) => {
+      if (i <= idx) { s.setAttribute('fill','var(--kc-yellow)'); s.setAttribute('stroke','var(--kc-yellow)'); }
+      else          { s.setAttribute('fill','none');             s.setAttribute('stroke','#d4d6d0'); }
+    }));
+  });
+</script>
+{% endblock %}

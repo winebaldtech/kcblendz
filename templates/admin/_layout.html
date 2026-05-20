@@ -1,0 +1,114 @@
+{# Admin base layout — top-bar w/ search, polling notification badges, avatar dropdown #}
+{% extends "base.html" %}
+{% set hide_chrome = True %}
+{% set au = admin_unread() %}
+{% set u  = current_user() %}
+
+{% block content %}
+<div class="flex flex-col lg:flex-row min-h-screen bg-[var(--bg)]">
+  {% include 'admin/_sidebar.html' %}
+  <div class="flex-1 min-w-0">
+
+    <!-- Top bar -->
+    <header class="bg-white border-b-2 border-black sticky top-0 z-30">
+      <div class="px-5 py-3 flex items-center gap-4">
+        <h1 class="text-lg md:text-xl font-extrabold uppercase tracking-wider shrink-0">{% block page_title %}{% endblock %}</h1>
+
+        <!-- Admin global search (jumps to admin orders w/ query — server-side filter) -->
+        <form action="{{ url_for('admin_orders') }}" method="get" class="hidden md:flex flex-1 max-w-md ml-4">
+          <div class="flex w-full border-2 border-black rounded-full overflow-hidden bg-white">
+            <input type="search" name="q" placeholder="Search orders, customers, products..."
+                   class="flex-1 px-4 py-1.5 outline-none text-sm bg-transparent">
+            <button type="submit" class="bg-black text-white px-4 text-xs font-extrabold tracking-wider" aria-label="Search">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </button>
+          </div>
+        </form>
+
+        <div class="flex items-center gap-3 ml-auto">
+          <!-- Pending orders -->
+          <a href="{{ url_for('admin_orders') }}?status=pending" class="icon-btn relative" aria-label="Pending orders" title="Pending orders">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+            <span class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-amber-500 text-white text-[10px] font-bold rounded-full items-center justify-center border-2 border-white flex {% if not au.orders_pending %}hidden{% endif %}"
+                  data-badge-orders>{{ au.orders_pending }}</span>
+          </a>
+
+          <!-- Messages -->
+          <a href="{{ url_for('admin_messages') }}" class="icon-btn relative" aria-label="Customer messages" title="Customer messages">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <span class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-sky-500 text-white text-[10px] font-bold rounded-full items-center justify-center border-2 border-white flex {% if not au.messages %}hidden{% endif %}"
+                  data-badge-messages>{{ au.messages }}</span>
+          </a>
+
+          <!-- Notifications -->
+          <a href="{{ url_for('admin_notifications') }}" class="icon-btn relative" aria-label="Notifications" title="Notifications">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            <span class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-rose-500 text-white text-[10px] font-bold rounded-full items-center justify-center border-2 border-white flex {% if not au.notifs %}hidden{% endif %}"
+                  data-badge-notifs>{{ au.notifs }}</span>
+          </a>
+
+          <!-- Profile dropdown -->
+          <div class="relative">
+            <button class="flex items-center gap-2 border-2 border-black rounded-full p-1 pr-3 hover:bg-[var(--kc-yellow)]/30 transition"
+                    onclick="this.nextElementSibling.classList.toggle('hidden')">
+              <span class="w-8 h-8 rounded-full overflow-hidden inline-flex items-center justify-center bg-[var(--kc-yellow)]">
+                {% if u and u['avatar_url'] %}
+                  <img src="{{ u['avatar_url'] }}" alt="" class="w-full h-full object-cover">
+                {% else %}
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                {% endif %}
+              </span>
+              <span class="hidden md:inline text-xs font-extrabold uppercase tracking-wider">{{ (u['full_name'].split(' ')[0] if u and u['full_name'] else 'Admin') }}</span>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="hidden absolute right-0 mt-2 w-56 bg-white border-2 border-black rounded-xl shadow-[4px_4px_0_#000] py-1 z-50">
+              <p class="px-4 py-2 text-[10px] uppercase tracking-[0.2em] text-gray-500 font-bold">Account</p>
+              <a href="{{ url_for('admin_profile') }}" class="block px-4 py-2 text-sm font-semibold hover:bg-[var(--kc-yellow)]">My Profile</a>
+              <a href="{{ url_for('account_dashboard') }}" class="block px-4 py-2 text-sm font-semibold hover:bg-[var(--kc-yellow)]">Customer View</a>
+              <div class="border-t border-black/10 my-1"></div>
+              <a href="{{ url_for('admin_promo') }}" class="block px-4 py-2 text-sm font-semibold hover:bg-[var(--kc-yellow)]">Promo Codes</a>
+              <a href="{{ url_for('admin_refunds') }}" class="block px-4 py-2 text-sm font-semibold hover:bg-[var(--kc-yellow)]">Refund Queue</a>
+              <a href="{{ url_for('admin_faqs') }}" class="block px-4 py-2 text-sm font-semibold hover:bg-[var(--kc-yellow)]">FAQs</a>
+              <div class="border-t border-black/10 my-1"></div>
+              <form action="{{ url_for('logout') }}" method="post" class="px-2">
+                <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+                <button class="w-full text-left px-2 py-2 text-sm font-semibold hover:bg-[var(--kc-yellow)] rounded">Sign out</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="p-5">
+      {% block admin_body %}{% endblock %}
+    </main>
+  </div>
+</div>
+
+<script>
+(function(){
+  // ─── Real-time admin badges — poll /api/admin/unread every 10s so admins
+  // see new orders/messages/notifications without refreshing.
+  function paint(){
+    fetch('{{ url_for("api_admin_unread") }}', {credentials: 'same-origin'})
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        var pairs = [['notifs',  'data-badge-notifs'],
+                     ['messages','data-badge-messages'],
+                     ['orders_pending','data-badge-orders']];
+        pairs.forEach(function(p){
+          var el = document.querySelector('['+p[1]+']');
+          if (!el) return;
+          var n = j[p[0]] || 0;
+          el.textContent = n;
+          el.classList.toggle('hidden', !n);
+        });
+      })
+      .catch(function(){ /* silently ignore (offline / 401 on logout) */ });
+  }
+  setInterval(paint, 10000);
+  document.addEventListener('visibilitychange', function(){ if (!document.hidden) paint(); });
+})();
+</script>
+{% endblock %}

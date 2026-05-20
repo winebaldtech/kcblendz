@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Shipping Policy — KCBlendz{% endblock %}
+
+{% block content %}
+<section class="max-w-3xl mx-auto px-4 py-12">
+  <p class="text-[var(--fuchsia)] uppercase tracking-widest text-xs font-extrabold mb-2">Legal</p>
+  <h1 class="text-4xl font-extrabold mb-2">Shipping & Delivery</h1>
+  <p class="text-sm text-gray-500 mb-8">Last updated: {{ current_year }}</p>
+
+  <div class="prose max-w-none space-y-5 text-gray-700">
+    <h2 class="text-xl font-extrabold text-[var(--kc-dark)] mt-6">Mauritius — our home base</h2>
+    <p>Every KCBlendz product is made at our campus kitchen — Kitchen 2 Kongo, Pamplemousses. We deliver island-wide within 24 hours of order confirmation, with most orders arriving the same day. Slots are available morning, afternoon and evening. Free delivery on orders over Rs 500. Pickup at the kitchen is also available — simply select "Pickup" at checkout.</p>
+
+    <h2 class="text-xl font-extrabold text-[var(--kc-dark)] mt-6">Nigeria</h2>
+    <p>Same-day delivery is available across Lagos for orders placed before 1pm. Outside Lagos, we deliver within 1–3 business days depending on the city. Delivery fees are calculated at checkout based on city. Orders over ₦15,000 within Lagos qualify for free delivery.</p>
+
+    <h2 class="text-xl font-extrabold text-[var(--kc-dark)] mt-6">Global — shelf-stable products only</h2>
+    <p>For international customers we ship our shelf-stable range — dried fruits, fruit powders, teas, freeze-dried items, and select kiddies packs. We use DHL Express with full tracking. Delivery typically takes 5–10 business days depending on destination. Customs duties and import taxes are the responsibility of the buyer.</p>
+
+    <h2 class="text-xl font-extrabold text-[var(--kc-dark)] mt-6">Why we don't ship fresh products globally</h2>
+    <p>Our fresh smoothies, juices and wellness bowls have a short shelf life and require cold-chain delivery, which we cannot guarantee internationally. We chose freshness over reach for those product lines.</p>
+
+    <h2 class="text-xl font-extrabold text-[var(--kc-dark)] mt-6">Order tracking</h2>
+    <p>Once your order is dispatched you'll receive a tracking link by email and (where available) WhatsApp. You can also view live order status in your account dashboard.</p>
+
+    <h2 class="text-xl font-extrabold text-[var(--kc-dark)] mt-6">Delivery delays</h2>
+    <p>While we do our best to meet delivery estimates, delays can happen due to weather, courier issues, or customs. We'll always communicate proactively if anything affects your delivery.</p>
+
+    <h2 class="text-xl font-extrabold text-[var(--kc-dark)] mt-6">Missed deliveries</h2>
+    <p>If you're not available at the time of delivery, our courier will attempt redelivery once. After two failed attempts, the order is returned to our kitchen and we'll reach out to arrange pickup or a new delivery date. A small re-delivery fee may apply.</p>
+  </div>
+</section>
+{% endblock %}

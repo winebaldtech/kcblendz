@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% block title %}Order {{ order['order_number'] }} — KCBlendz{% endblock %}
+{% set active = 'orders' %}
+
+{% block content %}
+<section class="max-w-7xl mx-auto px-4 py-8">
+  <a href="{{ url_for('account_orders') }}" class="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-wider hover:text-[var(--fuchsia)] mb-4">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+    Back to orders
+  </a>
+  <h1 class="text-3xl md:text-4xl font-extrabold mb-6">Order <span class="font-mono text-[var(--fuchsia)]">{{ order['order_number'] }}</span></h1>
+
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    {% include 'account/_sidebar.html' %}
+
+    <div class="lg:col-span-9 space-y-5">
+      <!-- Status -->
+      <div class="bg-white rounded-2xl border-2 border-black p-5 flex flex-wrap gap-4 items-center">
+        <div class="flex flex-col">
+          <span class="text-xs uppercase tracking-widest font-bold text-gray-500">Order status</span>
+          <span class="badge-square bg-gray-100 border border-black w-fit mt-1">{{ order['order_status'] }}</span>
+        </div>
+        <div class="flex flex-col">
+          <span class="text-xs uppercase tracking-widest font-bold text-gray-500">Payment</span>
+          <span class="badge-square {% if order['payment_status']=='paid' %}bg-[var(--lime)] text-black{% else %}bg-[var(--yellow)] text-black{% endif %} w-fit mt-1">{{ order['payment_status'].replace('_',' ') }}</span>
+        </div>
+        <div class="flex flex-col">
+          <span class="text-xs uppercase tracking-widest font-bold text-gray-500">Placed</span>
+          <span class="font-bold mt-1">{{ order['created_at'][:16] }}</span>
+        </div>
+        <div class="ml-auto flex gap-2">
+          {% if order['payment_status'] != 'paid' %}
+            <a href="{{ url_for('payment', order_id=order['id']) }}" class="btn-fuchsia rounded-full px-4 py-2 text-xs font-extrabold uppercase tracking-wider border-2 border-black">Complete payment</a>
+          {% endif %}
+          <a href="{{ url_for('order_receipt', order_id=order['id']) }}" target="_blank" class="btn-outline-dark rounded-full px-4 py-2 text-xs font-extrabold uppercase tracking-wider border-2 border-black inline-flex items-center gap-2">
+            🖨 Receipt
+          </a>
+          {% if order['payment_status'] == 'paid' and not cancelled and not refund_open %}
+            <a href="{{ url_for('request_refund', order_id=order['id']) }}" class="btn-outline-dark rounded-full px-4 py-2 text-xs font-extrabold uppercase tracking-wider border-2 border-black">Request refund</a>
+          {% elif refund_open %}
+            <span class="badge-square bg-amber-100 text-amber-800 border border-amber-400 px-3 py-1.5 text-xs">Refund pending</span>
+          {% endif %}
+          <form action="{{ url_for('account_reorder', order_id=order['id']) }}" method="post">
+            <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+            <button type="submit" class="btn-outline-dark rounded-full px-4 py-2 text-xs font-extrabold uppercase tracking-wider border-2 border-black inline-flex items-center gap-2">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+              Reorder
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Tracking timeline -->
+      {% if timeline %}
+      <div class="bg-white rounded-2xl border-2 border-black p-5">
+        <h2 class="text-lg font-extrabold uppercase tracking-wider mb-4">Tracking timeline</h2>
+        <ol class="space-y-0 relative">
+          {% if cancelled %}
+            <li class="flex gap-4 py-3 bg-rose-50 -mx-2 px-2 rounded-xl border-2 border-rose-200">
+              <span class="w-7 h-7 rounded-full bg-rose-600 text-white inline-flex items-center justify-center mt-0.5 shrink-0 font-bold">✕</span>
+              <div>
+                <p class="font-extrabold">Order cancelled</p>
+                <p class="text-sm text-gray-600">If this looks wrong, please contact us.</p>
+              </div>
+            </li>
+          {% else %}
+            {% for step in timeline %}
+              <li class="flex gap-4 py-3 {% if step.current %}-mx-2 px-2 rounded-xl bg-[var(--kc-yellow)]/30 border-2 border-[var(--kc-yellow)]{% endif %}">
+                <span class="w-7 h-7 rounded-full inline-flex items-center justify-center mt-0.5 shrink-0 font-bold text-xs
+                             {% if step.done %}bg-[var(--kc-green)] text-white
+                             {% elif step.current %}bg-[var(--kc-orange)] text-white animate-pulse
+                             {% else %}bg-gray-200 text-gray-500{% endif %}">
+                  {% if step.done %}✓{% else %}{{ loop.index }}{% endif %}
+                </span>
+                <div class="flex-1">
+                  <div class="flex items-center justify-between gap-3">
+                    <p class="font-extrabold {% if not step.done and not step.current %}text-gray-400{% endif %}">{{ step.label }}</p>
+                    {% if step.when %}<p class="text-xs text-gray-500 font-mono">{{ step.when[:16] }}</p>{% endif %}
+                  </div>
+                  <p class="text-sm text-gray-600 {% if not step.done and not step.current %}text-gray-400{% endif %}">{{ step.blurb }}</p>
+                </div>
+              </li>
+            {% endfor %}
+          {% endif %}
+        </ol>
+      </div>
+      {% endif %}
+
+      <!-- Items -->
+      <div class="bg-white rounded-2xl border-2 border-black p-5">
+        <h2 class="text-lg font-extrabold uppercase tracking-wider mb-4">Items</h2>
+        <ul class="divide-y-2 divide-dashed divide-gray-200">
+          {% for it in items %}
+          <li class="py-3 flex items-center gap-4">
+            <div class="w-14 h-14 rounded-lg border-2 border-black overflow-hidden bg-gray-100 shrink-0">
+              <img src="{{ it['item_image'] or url_for('static', filename='img/custom-cup.svg') }}" alt="" class="w-full h-full object-cover">
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="font-bold">{{ it['item_name'] }}</p>
+              {% if it['item_meta'] %}<p class="text-xs text-gray-500 line-clamp-2">{{ it['item_meta'] }}</p>{% endif %}
+              <p class="text-xs text-gray-500">Qty {{ it['quantity'] }} · {{ format_money(it['unit_price'], order['region']) }} each</p>
+            </div>
+            <p class="font-extrabold">{{ format_money(it['line_total'], order['region']) }}</p>
+          </li>
+          {% endfor %}
+        </ul>
+        <dl class="mt-4 pt-4 border-t-2 border-dashed border-gray-300 space-y-2 text-sm">
+          <div class="flex justify-between"><dt class="text-gray-600">Subtotal</dt><dd class="font-bold">{{ format_money(order['subtotal'], order['region']) }}</dd></div>
+          {% if order['discount_amount'] and order['discount_amount'] > 0 %}
+            <div class="flex justify-between text-emerald-700">
+              <dt>Discount{% if order['promo_code'] %} · {{ order['promo_code'] }}{% endif %}</dt>
+              <dd class="font-bold">− {{ format_money(order['discount_amount'], order['region']) }}</dd>
+            </div>
+          {% endif %}
+          {% if order['delivery_fee'] %}<div class="flex justify-between"><dt class="text-gray-600">Delivery</dt><dd class="font-bold">{{ format_money(order['delivery_fee'], order['region']) }}</dd></div>{% endif %}
+          <div class="flex justify-between text-base pt-1"><dt class="font-extrabold uppercase tracking-wider">Total</dt><dd class="font-extrabold">{{ format_money(order['total'], order['region']) }}</dd></div>
+        </dl>
+      </div>
+
+      <!-- Delivery info -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div class="bg-white rounded-2xl border-2 border-black p-5">
+          <h3 class="font-extrabold text-sm uppercase tracking-wider mb-3">Delivery</h3>
+          <p class="text-sm font-bold mb-1">{{ order['full_name'] }}</p>
+          {% if order['delivery_address'] %}
+            <p class="text-sm text-gray-600">{{ order['delivery_address'] }}</p>
+            <p class="text-sm text-gray-600">{{ order['delivery_city'] }}{% if order['delivery_state'] %}, {{ order['delivery_state'] }}{% endif %}</p>
+            <p class="text-sm text-gray-600">{{ order['delivery_country'] }}</p>
+          {% else %}
+            <p class="text-sm text-gray-500 italic">Pickup at our kitchen</p>
+          {% endif %}
+          {% if order['delivery_date'] %}<p class="text-xs text-gray-500 mt-2">{{ order['delivery_date'] }} · {{ order['delivery_slot'] or 'any time' }}</p>{% endif %}
+        </div>
+        <div class="bg-white rounded-2xl border-2 border-black p-5">
+          <h3 class="font-extrabold text-sm uppercase tracking-wider mb-3">Payment</h3>
+          <p class="text-sm font-bold">{{ order['payment_method'].replace('_', ' ').title() }}</p>
+          {% if order['payment_reference'] %}<p class="text-xs text-gray-500 font-mono mt-1">{{ order['payment_reference'] }}</p>{% endif %}
+        </div>
+      </div>
+
+      {% if order['notes'] %}
+      <div class="bg-white rounded-2xl border-2 border-black p-5">
+        <h3 class="font-extrabold text-sm uppercase tracking-wider mb-2">Notes</h3>
+        <p class="text-sm text-gray-700">{{ order['notes'] }}</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

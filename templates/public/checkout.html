@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+{% block title %}Checkout — KCBlendz{% endblock %}
+
+{% block content %}
+<section class="max-w-7xl mx-auto px-4 py-8">
+  <h1 class="text-3xl md:text-4xl font-extrabold mb-6">Checkout</h1>
+
+  <form method="post" action="{{ url_for('checkout') }}" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+
+    <!-- Form column -->
+    <div class="lg:col-span-7 space-y-5">
+
+      <!-- Contact -->
+      <div class="bg-white rounded-2xl border-2 border-black p-5">
+        <h2 class="text-lg font-extrabold uppercase tracking-wider mb-4 flex items-center gap-2">
+          <span class="w-7 h-7 bg-[var(--fuchsia)] text-white rounded-full inline-flex items-center justify-center text-sm border-2 border-black">1</span>
+          Contact
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="label">Full name</label>
+            <input type="text" name="full_name" value="{{ form.get('full_name', '') }}" required class="input w-full">
+          </div>
+          <div>
+            <label class="label">Email</label>
+            <input type="email" name="email" value="{{ form.get('email', '') }}" required class="input w-full">
+          </div>
+          <div class="md:col-span-2">
+            <label class="label">WhatsApp / Phone</label>
+            <input type="tel" name="phone" value="{{ form.get('phone', '') }}" required placeholder="+234..." class="input w-full">
+          </div>
+        </div>
+      </div>
+
+      <!-- Fulfillment -->
+      <div class="bg-white rounded-2xl border-2 border-black p-5">
+        <h2 class="text-lg font-extrabold uppercase tracking-wider mb-4 flex items-center gap-2">
+          <span class="w-7 h-7 bg-[var(--fuchsia)] text-white rounded-full inline-flex items-center justify-center text-sm border-2 border-black">2</span>
+          {% if region == 'GL' %}Shipping{% else %}Delivery{% endif %}
+        </h2>
+
+        {% if region != 'GL' %}
+        <!-- Fulfillment type -->
+        <div class="flex gap-3 mb-4">
+          <label class="flex-1 border-2 border-black rounded-xl p-3 cursor-pointer hover:bg-[var(--lime)] transition has-[:checked]:bg-[var(--fuchsia)] has-[:checked]:text-white">
+            <input type="radio" name="fulfillment" value="delivery" {% if form.get('fulfillment', 'delivery') == 'delivery' %}checked{% endif %} class="sr-only">
+            <span class="block font-extrabold text-sm">Delivery</span>
+            <span class="block text-xs opacity-80 mt-0.5">We bring it to you</span>
+          </label>
+          <label class="flex-1 border-2 border-black rounded-xl p-3 cursor-pointer hover:bg-[var(--lime)] transition has-[:checked]:bg-[var(--fuchsia)] has-[:checked]:text-white">
+            <input type="radio" name="fulfillment" value="pickup" {% if form.get('fulfillment') == 'pickup' %}checked{% endif %} class="sr-only">
+            <span class="block font-extrabold text-sm">Pickup</span>
+            <span class="block text-xs opacity-80 mt-0.5">Collect from our kitchen</span>
+          </label>
+        </div>
+        {% else %}
+        <input type="hidden" name="fulfillment" value="delivery">
+        {% endif %}
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="md:col-span-2">
+            <label class="label">Street address</label>
+            <input type="text" name="address" value="{{ form.get('address', '') }}" class="input w-full">
+          </div>
+          <div>
+            <label class="label">City</label>
+            <input type="text" name="city" value="{{ form.get('city', '') }}" class="input w-full">
+          </div>
+          <div>
+            <label class="label">State / Region</label>
+            <input type="text" name="state" value="{{ form.get('state', '') }}" class="input w-full">
+          </div>
+
+          {% if region != 'GL' %}
+          <div>
+            <label class="label">Delivery date</label>
+            <input type="date" name="delivery_date" value="{{ form.get('delivery_date', '') }}" class="input w-full">
+          </div>
+          <div>
+            <label class="label">Preferred slot</label>
+            <select name="delivery_slot" class="input w-full">
+              <option value="">Any time</option>
+              <option value="morning" {% if form.get('delivery_slot') == 'morning' %}selected{% endif %}>Morning (8am–12pm)</option>
+              <option value="afternoon" {% if form.get('delivery_slot') == 'afternoon' %}selected{% endif %}>Afternoon (12pm–4pm)</option>
+              <option value="evening" {% if form.get('delivery_slot') == 'evening' %}selected{% endif %}>Evening (4pm–8pm)</option>
+            </select>
+          </div>
+          {% endif %}
+
+          <div class="md:col-span-2">
+            <label class="label">Notes (optional)</label>
+            <textarea name="notes" rows="2" class="input w-full" placeholder="Building access, allergies, special instructions...">{{ form.get('notes', '') }}</textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Payment method -->
+      <div class="bg-white rounded-2xl border-2 border-black p-5">
+        <h2 class="text-lg font-extrabold uppercase tracking-wider mb-4 flex items-center gap-2">
+          <span class="w-7 h-7 bg-[var(--fuchsia)] text-white rounded-full inline-flex items-center justify-center text-sm border-2 border-black">3</span>
+          Payment method
+        </h2>
+        <div class="space-y-3">
+          {% if region == 'NG' %}
+          <label class="flex items-center gap-3 border-2 border-black rounded-xl p-3 cursor-pointer hover:bg-[var(--lime)] transition has-[:checked]:bg-[var(--fuchsia)] has-[:checked]:text-white">
+            <input type="radio" name="payment_method" value="card" checked class="w-4 h-4 accent-[var(--fuchsia)]">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            <div class="flex-1">
+              <p class="font-extrabold text-sm">Card &amp; more (Paystack)</p>
+              <p class="text-xs opacity-80">Visa, Mastercard, Verve, USSD, Bank &amp; Mobile Money</p>
+            </div>
+          </label>
+          {% else %}
+          <label class="flex items-center gap-3 border-2 border-black rounded-xl p-3 cursor-pointer hover:bg-[var(--lime)] transition has-[:checked]:bg-[var(--fuchsia)] has-[:checked]:text-white">
+            <input type="radio" name="payment_method" value="card" checked class="w-4 h-4 accent-[var(--fuchsia)]">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            <div class="flex-1">
+              <p class="font-extrabold text-sm">Credit / Debit card</p>
+              <p class="text-xs opacity-80">Visa, Mastercard, Amex — securely processed</p>
+            </div>
+          </label>
+
+          <label class="flex items-center gap-3 border-2 border-black rounded-xl p-3 cursor-pointer hover:bg-[var(--lime)] transition has-[:checked]:bg-[var(--fuchsia)] has-[:checked]:text-white">
+            <input type="radio" name="payment_method" value="paypal" class="w-4 h-4 accent-[var(--fuchsia)]">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M7.5 5h7.6c2.5 0 4.6 1.6 4.6 4 0 3-2.5 5-5.4 5h-2.2c-.4 0-.7.3-.8.7l-1.1 5.1c-.1.3-.4.5-.7.5H6.4c-.3 0-.6-.3-.5-.6L7.5 5z"/></svg>
+            <div class="flex-1">
+              <p class="font-extrabold text-sm">PayPal</p>
+              <p class="text-xs opacity-80">Log in to PayPal and pay with your balance or linked card</p>
+            </div>
+          </label>
+          {% endif %}
+
+          <label class="flex items-center gap-3 border-2 border-black rounded-xl p-3 cursor-pointer hover:bg-[var(--lime)] transition has-[:checked]:bg-[var(--fuchsia)] has-[:checked]:text-white">
+            <input type="radio" name="payment_method" value="bank_transfer" class="w-4 h-4 accent-[var(--fuchsia)]">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M3 10h18"/><path d="M5 6l7-3 7 3"/><path d="M4 10v11"/><path d="M20 10v11"/><path d="M8 14v3"/><path d="M12 14v3"/><path d="M16 14v3"/></svg>
+            <div class="flex-1">
+              <p class="font-extrabold text-sm">Bank transfer</p>
+              <p class="text-xs opacity-80">Upload proof after transfer — we confirm within 12h</p>
+            </div>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary column -->
+    <aside class="lg:col-span-5">
+      <div class="lg:sticky lg:top-32 bg-white rounded-2xl border-2 border-black p-5 shadow-[4px_4px_0_var(--fuchsia)]">
+        <h2 class="text-lg font-extrabold uppercase tracking-wider mb-4">Your order</h2>
+
+        <div class="space-y-3 max-h-72 overflow-y-auto pr-1 mb-4">
+          {% for it in cart['items'] %}
+          <div class="flex items-center gap-3 pb-3 border-b border-dashed border-gray-300 last:border-0">
+            <div class="w-14 h-14 rounded-lg border-2 border-black overflow-hidden bg-gray-100 shrink-0">
+              <img src="{{ it.image }}" alt="" class="w-full h-full object-cover">
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="font-bold text-sm truncate">{{ it.name }}</p>
+              <p class="text-xs text-gray-500">Qty {{ it.quantity }} · {{ format_money(it.unit_price, region) }}</p>
+            </div>
+            <p class="font-bold text-sm">{{ format_money(it.unit_price * it.quantity, region) }}</p>
+          </div>
+          {% endfor %}
+        </div>
+
+        <dl class="space-y-2 text-sm mb-4 pb-4 border-b-2 border-dashed border-gray-300">
+          <div class="flex justify-between"><dt class="text-gray-600">Subtotal</dt><dd class="font-bold" data-co-subtotal>{{ format_money(subtotal, region) }}</dd></div>
+          <div class="flex justify-between hidden" data-co-discount-row>
+            <dt class="text-emerald-700">Discount <span data-co-promo-code class="font-mono text-[10px] uppercase tracking-widest"></span></dt>
+            <dd class="font-bold text-emerald-700" data-co-discount-value>—</dd>
+          </div>
+          <div class="flex justify-between"><dt class="text-gray-600">Delivery</dt><dd class="font-bold">{{ format_money(delivery_fee, region) }}</dd></div>
+        </dl>
+
+        <!-- Promo code -->
+        <div class="mb-5">
+          <label class="text-[10px] uppercase tracking-widest font-bold text-gray-500 mb-1 block">Have a promo code?</label>
+          <div class="flex gap-2">
+            <input type="text" name="promo_code" id="promo_code"
+                   placeholder="e.g. WELCOME10"
+                   class="flex-1 border-2 border-[var(--kc-dark)] rounded-full px-3 py-1.5 text-sm font-mono uppercase outline-none">
+            <button type="button" id="promo-apply" class="btn-outline-dark rounded-full px-4 py-1.5 text-xs font-extrabold uppercase tracking-wider">Apply</button>
+          </div>
+          <p id="promo-msg" class="text-xs mt-1 font-bold"></p>
+        </div>
+
+        <div class="flex justify-between items-baseline mb-5">
+          <span class="text-sm font-bold uppercase tracking-widest">Total</span>
+          <span class="text-2xl font-extrabold" data-co-total>{{ format_money(subtotal + delivery_fee, region) }}</span>
+        </div>
+
+        <button type="submit" class="btn-fuchsia rounded-full w-full block text-center py-3 font-extrabold uppercase tracking-wider text-sm border-2 border-black shadow-[4px_4px_0_#000] inline-flex items-center justify-center gap-2">
+          Place order
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </button>
+        <p class="text-[10px] text-gray-500 text-center mt-3 uppercase tracking-widest font-bold">
+          <svg class="inline-block -mt-0.5 mr-1" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Secure SSL · We never store card data
+        </p>
+      </div>
+    </aside>
+  </form>
+</section>
+
+<script>
+(function(){
+  // ─── Promo preview — validates the code server-side without submitting the form.
+  // The server is still the source of truth at submit time; this is just UX.
+  var input = document.getElementById('promo_code');
+  var btn   = document.getElementById('promo-apply');
+  var msg   = document.getElementById('promo-msg');
+  if (!btn || !input) return;
+  btn.addEventListener('click', function(){
+    var code = (input.value || '').trim();
+    if (!code){ msg.textContent = ''; msg.className='text-xs mt-1 font-bold'; return; }
+    btn.disabled = true; btn.textContent = '…';
+    fetch('/api/promo/preview', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      credentials:'same-origin',
+      body: JSON.stringify({code: code})
+    }).then(function(r){ return r.json(); }).then(function(j){
+      btn.disabled = false; btn.textContent = 'Apply';
+      var row    = document.querySelector('[data-co-discount-row]');
+      var disVal = document.querySelector('[data-co-discount-value]');
+      var pCode  = document.querySelector('[data-co-promo-code]');
+      var total  = document.querySelector('[data-co-total]');
+      if (j.ok){
+        msg.textContent  = 'Promo applied · ' + j.discount_formatted + ' off';
+        msg.className    = 'text-xs mt-1 font-bold text-emerald-700';
+        row.classList.remove('hidden');
+        disVal.textContent = '− ' + j.discount_formatted;
+        pCode.textContent  = '· ' + j.code;
+        total.textContent  = j.new_total_formatted;
+      } else {
+        msg.textContent  = j.error || 'Could not apply that code.';
+        msg.className    = 'text-xs mt-1 font-bold text-rose-600';
+        row.classList.add('hidden');
+      }
+    }).catch(function(){
+      btn.disabled = false; btn.textContent = 'Apply';
+      msg.textContent = 'Network error — try again.';
+      msg.className = 'text-xs mt-1 font-bold text-rose-600';
+    });
+  });
+})();
+</script>
+{% endblock %}

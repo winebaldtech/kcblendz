@@ -1,0 +1,153 @@
+{% from "partials/_macros.html" import export_button %}
+{% extends "admin/_layout.html" %}
+{% set active = 'reports' %}
+{% block title %}Admin — Reports{% endblock %}
+{% block page_title %}Sales & growth reports{% endblock %}
+
+{% block head_extra %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  /* Fixed-height wrappers stop Chart.js growing infinitely */
+  .chart-box { position: relative; width: 100%; height: 280px; }
+  .chart-box-sm { position: relative; width: 100%; height: 220px; }
+</style>
+{% endblock %}
+
+{% block admin_body %}
+<div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+  <p class="text-xs text-gray-500 max-w-2xl">
+    The cards under <em>Revenue by region</em> show each region in its own currency.
+    The tables below show raw amounts; for a per-currency export use the CSV below.
+  </p>
+  <div class="flex flex-wrap items-center gap-2">
+    {{ export_button(url_for('admin_reports_export', type='all'),      'Export everything', primary=True) }}
+    {{ export_button(url_for('admin_reports_export', type='region'),   'Region CSV') }}
+    {{ export_button(url_for('admin_reports_export', type='daily'),    'Daily CSV') }}
+    {{ export_button(url_for('admin_reports_export', type='monthly'),  'Monthly CSV') }}
+    {{ export_button(url_for('admin_reports_export', type='products'), 'Products CSV') }}
+    {{ export_button(url_for('admin_reports_export', type='growth'),   'Growth CSV') }}
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
+  <div class="bg-white rounded-2xl border-2 border-black p-5">
+    <h2 class="text-base font-extrabold uppercase tracking-wider mb-4">Revenue by region</h2>
+    <div class="chart-box-sm"><canvas id="regionChart"></canvas></div>
+    <div class="mt-4 grid grid-cols-3 gap-2 text-center text-xs">
+      {% for r in region_compare %}
+      <div class="bg-[var(--bg)] rounded-lg p-2">
+        <p class="font-extrabold text-base">{{ r['region'] }}</p>
+        <p class="text-gray-600">{{ r['n'] }} orders</p>
+        <p class="font-bold">{{ format_money(r['v'], r['region']) }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="bg-white rounded-2xl border-2 border-black p-5">
+    <h2 class="text-base font-extrabold uppercase tracking-wider mb-4">Top products</h2>
+    {% if top_products %}
+    <table class="w-full text-sm">
+      <thead class="text-[11px] uppercase tracking-widest text-gray-500 border-b border-gray-200">
+        <tr><th class="text-left py-2">Product</th><th class="text-right">Qty</th><th class="text-right">Revenue</th></tr>
+      </thead>
+      <tbody>
+      {% for t in top_products %}
+        <tr class="border-b border-dashed border-gray-200">
+          <td class="py-2 font-bold truncate max-w-[200px]">{{ t['item_name'] }}</td>
+          <td class="py-2 text-right">{{ t['qty'] }}</td>
+          <td class="py-2 text-right font-bold">{{ '%.0f' % t['revenue'] }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+      <p class="text-sm text-gray-500">No paid orders yet.</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="bg-white rounded-2xl border-2 border-black p-5 mb-5">
+  <h2 class="text-base font-extrabold uppercase tracking-wider mb-4">Customer growth · last 30 days</h2>
+  <div class="chart-box"><canvas id="growthChart"></canvas></div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+  <div class="bg-white rounded-2xl border-2 border-black p-5">
+    <h2 class="text-base font-extrabold uppercase tracking-wider mb-4">Daily revenue (last 30 days)</h2>
+    {% if daily %}
+    <table class="w-full text-sm">
+      <thead class="text-[11px] uppercase tracking-widest text-gray-500 border-b border-gray-200">
+        <tr><th class="text-left py-2">Date</th><th class="text-right">Orders</th><th class="text-right">Revenue</th></tr>
+      </thead>
+      <tbody>
+      {% for d in daily %}
+        <tr class="border-b border-dashed border-gray-200">
+          <td class="py-2">{{ d['d'] }}</td>
+          <td class="py-2 text-right">{{ d['n'] }}</td>
+          <td class="py-2 text-right font-bold">{{ '%.0f' % d['v'] }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}<p class="text-sm text-gray-500">No data yet.</p>{% endif %}
+  </div>
+  <div class="bg-white rounded-2xl border-2 border-black p-5">
+    <h2 class="text-base font-extrabold uppercase tracking-wider mb-4">Monthly summary</h2>
+    {% if monthly %}
+    <table class="w-full text-sm">
+      <thead class="text-[11px] uppercase tracking-widest text-gray-500 border-b border-gray-200">
+        <tr><th class="text-left py-2">Month</th><th class="text-right">Orders</th><th class="text-right">Revenue</th></tr>
+      </thead>
+      <tbody>
+      {% for m in monthly %}
+        <tr class="border-b border-dashed border-gray-200">
+          <td class="py-2">{{ m['m'] }}</td>
+          <td class="py-2 text-right">{{ m['n'] }}</td>
+          <td class="py-2 text-right font-bold">{{ '%.0f' % m['v'] }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}<p class="text-sm text-gray-500">No data yet.</p>{% endif %}
+  </div>
+</div>
+
+<script>
+(function() {
+  if (typeof Chart === 'undefined') return;
+  var GREEN = '#2E8B57', ORANGE = '#F7941D', GOLD = '#FBC02D', DARK = '#1B3A2F';
+  Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+  Chart.defaults.animation.duration = 500;
+
+  var regions = {{ region_compare | map(attribute='region') | list | tojson }};
+  var regionRevenue = {{ region_compare | map(attribute='v') | list | tojson }};
+  var rc = document.getElementById('regionChart');
+  if (rc) new Chart(rc, {
+    type: 'bar',
+    data: { labels: regions, datasets: [{
+      label: 'Revenue', data: regionRevenue,
+      backgroundColor: [GREEN, ORANGE, GOLD],
+      borderColor: DARK, borderWidth: 2, borderRadius: 6 }] },
+    options: { responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true } } }
+  });
+
+  var gd = {{ growth | map(attribute='d') | list | tojson }};
+  var gv = {{ growth | map(attribute='n') | list | tojson }};
+  var gc = document.getElementById('growthChart');
+  if (gc) new Chart(gc, {
+    type: 'line',
+    data: { labels: gd.map(function(d){ return d.slice(5); }),
+      datasets: [{ label: 'New customers', data: gv,
+        borderColor: GREEN, backgroundColor: 'rgba(46,139,87,.12)',
+        borderWidth: 3, tension: .3, fill: true,
+        pointBackgroundColor: ORANGE, pointRadius: 3 }] },
+    options: { responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom' } },
+      scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+  });
+})();
+</script>
+{% endblock %}

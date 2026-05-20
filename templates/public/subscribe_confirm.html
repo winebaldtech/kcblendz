@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Confirm subscription · {{ plan['name'] }} — KCBlendz{% endblock %}
+
+{% set is_ng = region == 'NG' %}
+
+{% block content %}
+<section class="max-w-3xl mx-auto px-4 py-12">
+  <a href="{{ url_for('subscribe_index') }}" class="text-sm font-bold text-gray-600 hover:text-[var(--kc-dark)]">← Back to plans</a>
+
+  <div class="bg-white border-2 border-[var(--kc-dark)] rounded-2xl p-6 mt-3 shadow-[5px_5px_0_var(--kc-dark)]">
+    <p class="text-xs uppercase tracking-[0.3em] text-[var(--kc-green)] font-extrabold">Subscribe · Step 2 of 2</p>
+    <h1 class="font-display brand text-4xl mt-1">Confirm: {{ plan['name'] }}</h1>
+    <p class="text-gray-600 mt-1">{{ plan['tagline'] }}</p>
+
+    <div class="my-6 grid grid-cols-2 gap-3 text-sm">
+      <div class="bg-[var(--kc-cream)] rounded-xl p-3 border-2 border-[var(--kc-dark)]/15">
+        <p class="text-[10px] uppercase tracking-widest font-bold text-gray-500">Billing</p>
+        <p class="font-extrabold text-lg">{{ cycle.title() }}</p>
+      </div>
+      <div class="bg-[var(--kc-cream)] rounded-xl p-3 border-2 border-[var(--kc-dark)]/15">
+        <p class="text-[10px] uppercase tracking-widest font-bold text-gray-500">Today's charge</p>
+        <p class="font-extrabold text-lg text-[var(--kc-orange)]">{{ format_money(price, region) }}<span class="text-xs text-gray-500 font-semibold">/{{ 'mo' if cycle == 'monthly' else 'yr' }}</span></p>
+      </div>
+    </div>
+
+    <ul class="space-y-2 text-sm bg-gray-50 rounded-xl p-4 border border-[var(--kc-dark)]/10 mb-6">
+      {% for f in plan['features_json']|from_json %}
+        <li class="flex items-start gap-2">
+          <svg class="text-[var(--kc-green)] mt-0.5 shrink-0" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>{{ f }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+
+    <form method="post" class="space-y-5">
+      <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+      <input type="hidden" name="cycle" value="{{ cycle }}">
+
+      <div>
+        <h2 class="text-sm font-extrabold uppercase tracking-wider mb-3">Payment method</h2>
+        <div class="space-y-3">
+          {% if is_ng %}
+          <label class="flex items-center gap-3 border-2 border-black rounded-xl p-3 cursor-pointer hover:bg-[var(--lime)] transition has-[:checked]:bg-[var(--fuchsia)] has-[:checked]:text-white">
+            <input type="radio" name="payment_method" value="card" checked class="w-4 h-4 accent-[var(--fuchsia)]">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            <div class="flex-1">
+              <p class="font-extrabold text-sm">Card &amp; more (Paystack)</p>
+              <p class="text-xs opacity-80">Visa, Mastercard, Verve, USSD, Bank &amp; Mobile Money</p>
+            </div>
+          </label>
+          {% else %}
+          <label class="flex items-center gap-3 border-2 border-black rounded-xl p-3 cursor-pointer hover:bg-[var(--lime)] transition has-[:checked]:bg-[var(--fuchsia)] has-[:checked]:text-white">
+            <input type="radio" name="payment_method" value="card" checked class="w-4 h-4 accent-[var(--fuchsia)]">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            <div class="flex-1">
+              <p class="font-extrabold text-sm">Credit / Debit card</p>
+              <p class="text-xs opacity-80">Visa, Mastercard, Amex — securely processed</p>
+            </div>
+          </label>
+
+          <label class="flex items-center gap-3 border-2 border-black rounded-xl p-3 cursor-pointer hover:bg-[var(--lime)] transition has-[:checked]:bg-[var(--fuchsia)] has-[:checked]:text-white">
+            <input type="radio" name="payment_method" value="paypal" class="w-4 h-4 accent-[var(--fuchsia)]">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M7.5 5h7.6c2.5 0 4.6 1.6 4.6 4 0 3-2.5 5-5.4 5h-2.2c-.4 0-.7.3-.8.7l-1.1 5.1c-.1.3-.4.5-.7.5H6.4c-.3 0-.6-.3-.5-.6L7.5 5z"/></svg>
+            <div class="flex-1">
+              <p class="font-extrabold text-sm">PayPal</p>
+              <p class="text-xs opacity-80">Log in to PayPal and pay with your balance or linked card</p>
+            </div>
+          </label>
+          {% endif %}
+
+          <label class="flex items-center gap-3 border-2 border-black rounded-xl p-3 cursor-pointer hover:bg-[var(--lime)] transition has-[:checked]:bg-[var(--fuchsia)] has-[:checked]:text-white">
+            <input type="radio" name="payment_method" value="bank_transfer" class="w-4 h-4 accent-[var(--fuchsia)]">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M3 10h18"/><path d="M5 6l7-3 7 3"/><path d="M4 10v11"/><path d="M20 10v11"/></svg>
+            <div class="flex-1">
+              <p class="font-extrabold text-sm">Bank transfer</p>
+              <p class="text-xs opacity-80">Upload proof after transfer — we confirm within 12h</p>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <button type="submit" class="w-full btn-orange border-2 border-[var(--kc-dark)] rounded-full py-3 font-extrabold uppercase tracking-wider text-sm shadow-[3px_3px_0_var(--kc-dark)]">
+        Continue to payment · {{ format_money(price, region) }}
+      </button>
+      <p class="text-center text-xs text-gray-500">
+        <svg class="inline -mt-0.5" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Your subscription is only activated after payment is confirmed. Pause or cancel any time.
+      </p>
+    </form>
+  </div>
+</section>
+{% endblock %}

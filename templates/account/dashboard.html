@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}My Account — KCBlendz{% endblock %}
+{% set active = 'dashboard' %}
+
+{% block content %}
+<section class="max-w-7xl mx-auto px-4 py-8">
+  <div class="mb-6">
+    <p class="text-[var(--fuchsia)] uppercase tracking-widest text-xs font-extrabold">Welcome back</p>
+    <h1 class="text-3xl md:text-4xl font-extrabold">Hi, {{ current_user()['full_name'].split(' ')[0] }}</h1>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    {% include 'account/_sidebar.html' %}
+
+    <div class="lg:col-span-9 space-y-6">
+      <!-- Stats -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="bg-white rounded-2xl border-2 border-black p-5 shadow-[4px_4px_0_var(--fuchsia)]">
+          <p class="text-xs uppercase tracking-widest font-bold text-gray-500">Orders</p>
+          <p class="text-3xl font-extrabold mt-1">{{ stats['n_orders'] }}</p>
+        </div>
+        <div class="bg-white rounded-2xl border-2 border-black p-5 shadow-[4px_4px_0_var(--lime)]">
+          <p class="text-xs uppercase tracking-widest font-bold text-gray-500">Total spent</p>
+          <p class="text-3xl font-extrabold mt-1">{{ format_money(stats['total_spent'], current_region() or 'NG') }}</p>
+        </div>
+        <div class="bg-white rounded-2xl border-2 border-black p-5 shadow-[4px_4px_0_var(--sky)]">
+          <p class="text-xs uppercase tracking-widest font-bold text-gray-500">Saved blends</p>
+          <p class="text-3xl font-extrabold mt-1">{{ saved|length }}</p>
+        </div>
+      </div>
+
+      <!-- Recent orders -->
+      <div class="bg-white rounded-2xl border-2 border-black p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-extrabold uppercase tracking-wider">Recent orders</h2>
+          <a href="{{ url_for('account_orders') }}" class="text-xs font-bold uppercase tracking-wider hover:text-[var(--fuchsia)]">View all →</a>
+        </div>
+        {% if recent_orders %}
+          <ul class="divide-y-2 divide-dashed divide-gray-200">
+            {% for o in recent_orders %}
+            <li class="py-3 flex items-center gap-4">
+              <div>
+                <p class="font-mono font-bold text-sm">{{ o['order_number'] }}</p>
+                <p class="text-xs text-gray-500">{{ o['created_at'][:10] }} · {{ o['region'] }}</p>
+              </div>
+              <span class="badge-square {% if o['payment_status']=='paid' %}bg-[var(--lime)] text-black{% else %}bg-[var(--yellow)] text-black{% endif %}">{{ o['payment_status'].replace('_',' ') }}</span>
+              <span class="badge-square bg-gray-100 border border-black">{{ o['order_status'] }}</span>
+              <p class="font-extrabold ml-auto">{{ format_money(o['total'], o['region']) }}</p>
+              <a href="{{ url_for('account_order_detail', order_id=o['id']) }}" class="text-xs font-bold uppercase tracking-wider hover:text-[var(--fuchsia)]">Details</a>
+            </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-sm text-gray-500 py-3">No orders yet. <a class="link" href="{{ url_for('shop') }}">Start shopping</a>.</p>
+        {% endif %}
+      </div>
+
+      <!-- Saved blends -->
+      {% if saved %}
+      <div class="bg-white rounded-2xl border-2 border-black p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-extrabold uppercase tracking-wider">Your saved blends</h2>
+          <a href="{{ url_for('account_saved') }}" class="text-xs font-bold uppercase tracking-wider hover:text-[var(--fuchsia)]">View all →</a>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {% for s in saved %}
+          <div class="border-2 border-black rounded-xl p-3 bg-[var(--bg)]">
+            <p class="font-extrabold text-sm">{{ s['name'] }}</p>
+            <p class="text-xs text-gray-500 mt-1">{{ s['region'] }} · {{ format_money(s['price'], s['region']) }}</p>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Notifications -->
+      {% if notifs %}
+      <div class="bg-white rounded-2xl border-2 border-black p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-extrabold uppercase tracking-wider">Latest updates</h2>
+          <a href="{{ url_for('account_notifications') }}" class="text-xs font-bold uppercase tracking-wider hover:text-[var(--fuchsia)]">View all →</a>
+        </div>
+        <ul class="space-y-2">
+          {% for n in notifs[:5] %}
+          <li class="flex items-start gap-3 p-2 rounded-lg {% if not n['is_read'] %}bg-[var(--lime)]/30{% endif %}">
+            <span class="w-2 h-2 mt-2 rounded-full {% if n['is_read'] %}bg-gray-300{% else %}bg-[var(--fuchsia)]{% endif %}"></span>
+            <div class="flex-1">
+              <p class="font-bold text-sm">{{ n['title'] }}</p>
+              {% if n['body'] %}<p class="text-xs text-gray-600">{{ n['body'] }}</p>{% endif %}
+              <p class="text-[10px] text-gray-500 mt-1 uppercase tracking-widest font-bold">{{ n['created_at'][:16] }}</p>
+            </div>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

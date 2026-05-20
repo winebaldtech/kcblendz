@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}{{ p['title'] }} — KCBlendz Wellness Hub{% endblock %}
+{% block description %}{{ p['subtitle'] or p['title'] }}{% endblock %}
+
+{% block content %}
+<article>
+  <!-- Hero -->
+  <header class="relative bg-[var(--dark)] text-white border-b-2 border-black">
+    <div class="absolute inset-0 overflow-hidden">
+      <img src="{{ p['cover_url'] }}" alt="" class="w-full h-full object-cover opacity-30">
+      <div class="absolute inset-0 bg-gradient-to-b from-black/70 to-[var(--dark)]"></div>
+    </div>
+    <div class="relative max-w-3xl mx-auto px-4 py-16 md:py-24">
+      <a href="{{ url_for('wellness') }}" class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--lime)] mb-4 hover:text-white">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        All articles
+      </a>
+      <div class="flex items-center gap-2 mb-4">
+        <span class="badge-square bg-[var(--lime)] text-black">{{ p['category'] }}</span>
+      </div>
+      <h1 class="text-3xl md:text-5xl font-extrabold leading-tight mb-3">{{ p['title'] }}</h1>
+      {% if p['subtitle'] %}<p class="text-lg text-gray-300 max-w-2xl mb-4">{{ p['subtitle'] }}</p>{% endif %}
+      <p class="text-xs uppercase tracking-widest font-bold text-gray-400">
+        By {{ p['author'] }} · {{ p['read_minutes'] }} min read · {{ p['created_at'][:10] }}
+      </p>
+    </div>
+  </header>
+
+  <!-- Cover image -->
+  <div class="max-w-4xl mx-auto px-4 -mt-12 md:-mt-16 relative z-10">
+    <img src="{{ p['cover_url'] }}" alt="{{ p['title'] }}" class="w-full aspect-video object-cover rounded-2xl border-2 border-black shadow-[4px_4px_0_var(--fuchsia)]">
+  </div>
+
+  <!-- Body -->
+  <div class="max-w-3xl mx-auto px-4 py-12">
+    <div class="prose prose-lg max-w-none text-gray-800 leading-relaxed space-y-5">
+      {% for paragraph in p['content'].split('\n\n') %}
+        {% if paragraph.strip() %}
+          {% if paragraph.startswith('## ') %}
+            <h2 class="text-2xl font-extrabold mt-8 mb-3">{{ paragraph[3:] | mdinline }}</h2>
+          {% elif paragraph.startswith('# ') %}
+            <h2 class="text-3xl font-extrabold mt-8 mb-3">{{ paragraph[2:] | mdinline }}</h2>
+          {% elif paragraph.startswith('- ') %}
+            <ul class="list-disc pl-6 space-y-1">
+              {% for line in paragraph.split('\n') %}
+                {% if line.startswith('- ') %}<li>{{ line[2:] | mdinline }}</li>{% endif %}
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p>{{ paragraph | mdinline }}</p>
+          {% endif %}
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Related -->
+  {% if related %}
+  <section class="bg-white border-y-2 border-black py-12">
+    <div class="max-w-7xl mx-auto px-4">
+      <h2 class="text-2xl font-extrabold mb-6">Keep reading</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        {% for r in related %}
+        <a href="{{ url_for('wellness_post', slug=r['slug']) }}" class="card-market block bg-[var(--bg)] rounded-2xl border-2 border-black overflow-hidden">
+          <div class="aspect-video bg-gray-200">
+            <img src="{{ r['cover_url'] }}" alt="{{ r['title'] }}" class="w-full h-full object-cover">
+          </div>
+          <div class="p-4">
+            <span class="badge-square bg-[var(--lime)] text-black mb-2">{{ r['category'] }}</span>
+            <h3 class="font-extrabold text-base leading-snug line-clamp-2">{{ r['title'] }}</h3>
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+  {% endif %}
+</article>
+{% endblock %}

@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Thank you — Order {{ order['order_number'] }}{% endblock %}
+
+{% block content %}
+<section class="max-w-3xl mx-auto px-4 py-12 text-center">
+  <div class="w-20 h-20 mx-auto rounded-full bg-[var(--lime)] border-2 border-black flex items-center justify-center mb-5 shadow-[4px_4px_0_var(--fuchsia)]">
+    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+  </div>
+
+  <h1 class="text-3xl md:text-5xl font-extrabold mb-3">{% if order['is_subscription'] %}You're in, {{ order['full_name'].split(' ')[0] }}!{% else %}Thank you, {{ order['full_name'].split(' ')[0] }}!{% endif %}</h1>
+  <p class="text-gray-600 mb-1">{% if order['is_subscription'] %}Your subscription is active.{% else %}Your order is confirmed.{% endif %}</p>
+  <p class="text-sm text-gray-500">A receipt has been sent to <span class="font-bold">{{ order['email'] }}</span></p>
+
+  <div class="bg-white rounded-2xl border-2 border-black p-6 mt-8 text-left">
+    <div class="flex items-baseline justify-between mb-4 pb-4 border-b-2 border-dashed border-gray-300">
+      <div>
+        <p class="text-xs uppercase tracking-widest font-bold text-gray-500">Order number</p>
+        <p class="font-mono font-extrabold text-lg">{{ order['order_number'] }}</p>
+      </div>
+      <span class="badge-square {% if order['payment_status'] == 'paid' %}bg-[var(--lime)] text-black{% else %}bg-[var(--yellow)] text-black{% endif %}">
+        {{ order['payment_status'].replace('_',' ') }}
+      </span>
+    </div>
+
+    <div class="space-y-3 mb-4">
+      {% for it in items %}
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-lg border-2 border-black overflow-hidden bg-gray-100 shrink-0">
+          <img src="{{ it['item_image'] or url_for('static', filename='img/custom-cup.svg') }}" alt="" class="w-full h-full object-cover">
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="font-bold text-sm truncate">{{ it['item_name'] }}</p>
+          {% if it['item_meta'] %}<p class="text-[11px] text-gray-500 line-clamp-1">{{ it['item_meta'] }}</p>{% endif %}
+          <p class="text-xs text-gray-500">Qty {{ it['quantity'] }}</p>
+        </div>
+        <p class="font-bold text-sm">{{ format_money(it['line_total'], order['region']) }}</p>
+      </div>
+      {% endfor %}
+    </div>
+
+    <dl class="space-y-2 text-sm pt-4 border-t-2 border-dashed border-gray-300">
+      <div class="flex justify-between"><dt class="text-gray-600">Subtotal</dt><dd class="font-bold">{{ format_money(order['subtotal'], order['region']) }}</dd></div>
+      {% if order['discount_amount'] and order['discount_amount'] > 0 %}
+        <div class="flex justify-between text-emerald-700">
+          <dt>Discount{% if order['promo_code'] %} · {{ order['promo_code'] }}{% endif %}</dt>
+          <dd class="font-bold">− {{ format_money(order['discount_amount'], order['region']) }}</dd>
+        </div>
+      {% endif %}
+      {% if order['delivery_fee'] %}<div class="flex justify-between"><dt class="text-gray-600">Delivery</dt><dd class="font-bold">{{ format_money(order['delivery_fee'], order['region']) }}</dd></div>{% endif %}
+      <div class="flex justify-between text-base"><dt class="font-extrabold uppercase tracking-wider">Total</dt><dd class="font-extrabold">{{ format_money(order['total'], order['region']) }}</dd></div>
+    </dl>
+  </div>
+
+  <div class="flex flex-wrap items-center justify-center gap-3 mt-8">
+    {% if order['is_subscription'] %}
+      {% if current_user() %}
+      <a href="{{ url_for('account_dashboard') }}" class="btn-fuchsia rounded-full px-6 py-3 font-extrabold uppercase tracking-wider text-sm border-2 border-black">
+        Go to my account
+      </a>
+      {% endif %}
+      <a href="{{ url_for('order_receipt', order_id=order['id'], token=order['tracking_token']) }}" target="_blank"
+         class="btn-outline-dark rounded-full px-6 py-3 font-extrabold uppercase tracking-wider text-sm border-2 border-black">
+        🖨 Print receipt
+      </a>
+      <a href="{{ url_for('shop') }}" class="btn-outline-dark rounded-full px-6 py-3 font-extrabold uppercase tracking-wider text-sm border-2 border-black">
+        Browse shop
+      </a>
+    {% else %}
+      {% if current_user() %}
+        <a href="{{ url_for('account_order_detail', order_id=order['id']) }}" class="btn-fuchsia rounded-full px-6 py-3 font-extrabold uppercase tracking-wider text-sm border-2 border-black">
+          Track this order
+        </a>
+      {% else %}
+        <a href="{{ url_for('track_order', token=order['tracking_token']) }}" class="btn-fuchsia rounded-full px-6 py-3 font-extrabold uppercase tracking-wider text-sm border-2 border-black">
+          Track this order
+        </a>
+      {% endif %}
+      <a href="{{ url_for('order_receipt', order_id=order['id'], token=order['tracking_token']) }}" target="_blank"
+         class="btn-outline-dark rounded-full px-6 py-3 font-extrabold uppercase tracking-wider text-sm border-2 border-black">
+        🖨 Print receipt
+      </a>
+      <a href="{{ url_for('shop') }}" class="btn-outline-dark rounded-full px-6 py-3 font-extrabold uppercase tracking-wider text-sm border-2 border-black">
+        Keep shopping
+      </a>
+    {% endif %}
+  </div>
+
+  {% if not current_user() and not order['is_subscription'] %}
+    <p class="text-xs text-gray-500 mt-6 max-w-md mx-auto bg-[var(--kc-yellow)]/30 border-2 border-[var(--kc-yellow)] rounded-xl p-3">
+      <strong class="block mb-0.5">Bookmark your tracking link:</strong>
+      <a href="{{ url_for('track_order', token=order['tracking_token'], _external=True) }}" class="break-all font-mono text-[10px]">{{ url_for('track_order', token=order['tracking_token'], _external=True) }}</a>
+    </p>
+  {% endif %}
+
+  <p class="text-xs text-gray-500 mt-8 max-w-md mx-auto">
+    Questions about your order? Email <a class="link" href="mailto:hello@kcblendz.com">hello@kcblendz.com</a> or WhatsApp <a class="link" href="https://wa.me/2348024655191">+234 802 4655 191</a>.
+  </p>
+</section>
+{% endblock %}

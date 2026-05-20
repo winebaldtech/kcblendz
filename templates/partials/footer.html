@@ -1,0 +1,114 @@
+{# Footer — KCBlendz brand #}
+<footer class="bg-[var(--kc-dark)] text-white border-t-2 border-[var(--kc-yellow)] mt-12">
+  <!-- Newsletter strip -->
+  <section class="border-b border-white/10 py-10">
+    <div class="max-w-5xl mx-auto px-4 text-center">
+      <p class="text-[var(--kc-yellow)] uppercase tracking-[0.3em] text-xs font-extrabold mb-2">Join the wellness club</p>
+      <h2 class="text-2xl md:text-3xl font-extrabold mb-2">10% off your first order</h2>
+      <p class="text-gray-300 text-sm mb-5">Drop your email — we'll send a welcome code, monthly recipes, and exclusive product drops.</p>
+      <form action="{{ url_for('newsletter_subscribe') }}" method="post" class="flex flex-col sm:flex-row max-w-md mx-auto gap-2">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <input type="email" name="email" required placeholder="your@email.com" class="flex-1 px-4 py-3 rounded-full text-[var(--kc-dark)] outline-none">
+        <button type="submit" class="btn-orange rounded-full px-6 py-3 font-extrabold uppercase tracking-wider text-sm border-2 border-[var(--kc-yellow)]">Subscribe</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- Main footer columns -->
+  <div class="max-w-7xl mx-auto px-4 py-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+    <!-- Brand -->
+    <div>
+      <div class="flex items-center gap-2 mb-3">
+        <img src="{{ url_for('static', filename='img/logo.png') }}" alt="KCBlendz" class="w-12 h-12 rounded-full border-2 border-[var(--kc-yellow)] object-cover">
+        <span class="brand text-2xl text-white">KCBlendz</span>
+      </div>
+      <p class="text-sm text-gray-300 mb-4">Nourishing lives, inspiring wellness. Real fruit, real ingredients, made with care at our campus kitchen.</p>
+      <div class="flex gap-2">
+        <a href="https://wa.me/2348024655191" target="_blank" rel="noopener" class="w-9 h-9 rounded-full bg-white/10 hover:bg-[var(--kc-orange)] transition flex items-center justify-center" aria-label="WhatsApp">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347"/></svg>
+        </a>
+        <a href="https://instagram.com/kcblendz" target="_blank" rel="noopener" class="w-9 h-9 rounded-full bg-white/10 hover:bg-[var(--kc-orange)] transition flex items-center justify-center" aria-label="Instagram">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="18" cy="6" r="1" fill="currentColor"/></svg>
+        </a>
+        <a href="https://facebook.com/kcblendz" target="_blank" rel="noopener" class="w-9 h-9 rounded-full bg-white/10 hover:bg-[var(--kc-orange)] transition flex items-center justify-center" aria-label="Facebook">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M22 12.07a10 10 0 1 0-11.56 9.88V14.9H7.9V12.07h2.54V9.86c0-2.5 1.5-3.89 3.78-3.89.76 0 1.55.06 2.14.13v2.45h-1.51c-1.18 0-1.55.73-1.55 1.48v1.05h2.92l-.47 2.83h-2.45v7.05A10 10 0 0 0 22 12.07z"/></svg>
+        </a>
+        <a href="https://twitter.com/kcblendz" target="_blank" rel="noopener" class="w-9 h-9 rounded-full bg-white/10 hover:bg-[var(--kc-orange)] transition flex items-center justify-center" aria-label="X / Twitter">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- Shop -->
+    <div>
+      <h3 class="font-extrabold text-sm uppercase tracking-widest mb-4 text-[var(--kc-yellow)]">Shop</h3>
+      <ul class="space-y-2 text-sm text-gray-300">
+        <li><a href="{{ url_for('shop', category='smoothies') }}" class="hover:text-[var(--kc-yellow)]">Smoothies</a></li>
+        <li><a href="{{ url_for('shop', category='juices') }}" class="hover:text-[var(--kc-yellow)]">Juices</a></li>
+        <li><a href="{{ url_for('shop', category='wellness-shots') }}" class="hover:text-[var(--kc-yellow)]">Wellness Shots</a></li>
+        <li><a href="{{ url_for('shop', category='wellness-bowls') }}" class="hover:text-[var(--kc-yellow)]">Bowls</a></li>
+        <li><a href="{{ url_for('shop', category='dried-fruits') }}" class="hover:text-[var(--kc-yellow)]">Dried Fruits</a></li>
+        <li><a href="{{ url_for('shop', category='fruit-powders') }}" class="hover:text-[var(--kc-yellow)]">Fruit Powders</a></li>
+        <li><a href="{{ url_for('builder') }}" class="hover:text-[var(--kc-yellow)]">Build Your Blend</a></li>
+      </ul>
+    </div>
+
+    <!-- Company -->
+    <div>
+      <h3 class="font-extrabold text-sm uppercase tracking-widest mb-4 text-[var(--kc-yellow)]">Company</h3>
+      <ul class="space-y-2 text-sm text-gray-300">
+        <li><a href="{{ url_for('about') }}" class="hover:text-[var(--kc-yellow)]">About us</a></li>
+        <li><a href="{{ url_for('wellness') }}" class="hover:text-[var(--kc-yellow)]">Wellness Hub</a></li>
+        <li><a href="{{ url_for('contact') }}" class="hover:text-[var(--kc-yellow)]">Contact</a></li>
+        <li><a href="{{ url_for('faq') }}" class="hover:text-[var(--kc-yellow)]">FAQ</a></li>
+        <li><a href="{{ url_for('shipping_policy') }}" class="hover:text-[var(--kc-yellow)]">Shipping</a></li>
+        <li><a href="{{ url_for('refund_policy') }}" class="hover:text-[var(--kc-yellow)]">Refund Policy</a></li>
+        <li><a href="{{ url_for('privacy') }}" class="hover:text-[var(--kc-yellow)]">Privacy</a></li>
+        <li><a href="{{ url_for('terms') }}" class="hover:text-[var(--kc-yellow)]">Terms</a></li>
+      </ul>
+    </div>
+
+    <!-- Contact -->
+    <div>
+      <h3 class="font-extrabold text-sm uppercase tracking-widest mb-4 text-[var(--kc-yellow)]">Visit us</h3>
+      <ul class="space-y-3 text-sm text-gray-300">
+        <li class="flex items-start gap-3">
+          <svg class="mt-0.5 shrink-0 text-[var(--kc-yellow)]" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          <span>Kitchen 2, Kongo<br>Pamplemousses, Mauritius</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <svg class="mt-0.5 shrink-0 text-[var(--kc-yellow)]" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z"/></svg>
+          <a href="tel:+2348024655191" class="hover:text-[var(--kc-yellow)]">+234 802 4655 191</a>
+        </li>
+        <li class="flex items-start gap-3">
+          <svg class="mt-0.5 shrink-0 text-[var(--kc-yellow)]" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          <a href="mailto:hello@kcblendz.com" class="hover:text-[var(--kc-yellow)]">hello@kcblendz.com</a>
+        </li>
+        <li class="flex items-start gap-3">
+          <svg class="mt-0.5 shrink-0 text-[var(--kc-yellow)]" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span>Mon–Sat · 8am–8pm<br>Sun · 10am–4pm</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Bottom strip -->
+  <div class="border-t border-white/10 py-5 px-4">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-[12px] text-gray-400">
+      <p>© {{ current_year }} KCBlendz Ltd. All rights reserved.</p>
+      <div class="flex items-center gap-3">
+        <span class="opacity-70">Payments:</span>
+        <!-- Visa -->
+        <span class="inline-flex w-9 h-6 rounded bg-white items-center justify-center text-[10px] font-extrabold text-[#1A1F71]">VISA</span>
+        <!-- Mastercard -->
+        <span class="inline-flex w-9 h-6 rounded bg-white items-center justify-center" aria-label="Mastercard">
+          <svg width="22" height="14" viewBox="0 0 22 14"><circle cx="8" cy="7" r="5.5" fill="#EB001B"/><circle cx="14" cy="7" r="5.5" fill="#F79E1B"/><path d="M11 3.2A5.5 5.5 0 0 1 11 10.8 5.5 5.5 0 0 1 11 3.2z" fill="#FF5F00"/></svg>
+        </span>
+        <!-- PayPal -->
+        <span class="inline-flex w-10 h-6 rounded bg-white items-center justify-center text-[10px] font-extrabold text-[#003087]">PayPal</span>
+        <!-- Paystack -->
+        <span class="inline-flex w-12 h-6 rounded bg-white items-center justify-center text-[9px] font-extrabold text-[#0BA4DB]">Paystack</span>
+      </div>
+    </div>
+  </div>
+</footer>

@@ -1,0 +1,32 @@
+{# Product card — expects p, price_field #}
+<div class="card-market bg-white rounded-2xl border-2 border-black overflow-hidden flex flex-col">
+  <a href="{{ url_for('product_detail', slug=p['slug']) }}" class="relative block aspect-square overflow-hidden bg-gray-100">
+    <img src="{{ p['image_url'] or url_for('static', filename='img/custom-cup.svg') }}" alt="{{ p['name'] }}" loading="lazy" class="w-full h-full object-cover">
+    <!-- Badges -->
+    <div class="absolute top-2 left-2 flex flex-col gap-1">
+      {% if p['is_bestseller'] %}<span class="badge-square bg-[var(--fuchsia)] text-white">Bestseller</span>{% endif %}
+      {% if p['is_new'] %}<span class="badge-square bg-[var(--lime)] text-black">New</span>{% endif %}
+      {% if p['is_featured'] and not p['is_bestseller'] %}<span class="badge-square bg-[var(--dark)] text-white">Featured</span>{% endif %}
+    </div>
+  </a>
+  <div class="p-3 md:p-4 flex flex-col gap-2 flex-1">
+    <h3 class="font-extrabold text-sm md:text-base leading-tight line-clamp-2">
+      <a href="{{ url_for('product_detail', slug=p['slug']) }}">{{ p['name'] }}</a>
+    </h3>
+    {% if p['short_description'] %}
+      <p class="text-xs text-gray-600 line-clamp-2">{{ p['short_description'] }}</p>
+    {% endif %}
+    <div class="flex items-center justify-between mt-auto pt-2">
+      <span class="font-extrabold text-base">{{ format_money(p[price_field], current_region()) }}</span>
+      <form action="{{ url_for('cart_add') }}" method="post" data-cart-add data-pid="{{ p['id'] }}">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <input type="hidden" name="product_id" value="{{ p['id'] }}">
+        <input type="hidden" name="quantity" value="1">
+        <button type="submit" class="btn-fuchsia rounded-full px-3 py-1.5 text-xs font-extrabold uppercase tracking-wider border-2 border-black inline-flex items-center gap-1 transition-transform active:scale-95">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span data-cart-add-label>Add</span>
+        </button>
+      </form>
+    </div>
+  </div>
+</div>

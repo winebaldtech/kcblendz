@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Shop — KCBlendz{% endblock %}
+
+{% block content %}
+<section class="max-w-7xl mx-auto px-4 py-6">
+  <!-- Breadcrumb / header -->
+  <div class="mb-6 flex items-end justify-between flex-wrap gap-3">
+    <div>
+      <nav class="text-xs text-gray-500 uppercase tracking-widest font-bold mb-2">
+        <a class="hover:text-[var(--fuchsia)]" href="{{ url_for('home') }}">Home</a> / <span class="text-black">Shop</span>{% if cat_slug %} / <span class="text-[var(--fuchsia)]">{{ cat_slug.replace('-', ' ') }}</span>{% endif %}
+      </nav>
+      <h1 class="text-3xl md:text-4xl font-extrabold">
+        {% if q %}Results for "{{ q }}"
+        {% elif cat_slug %}{{ cat_slug.replace('-', ' ').title() }}
+        {% else %}All products{% endif %}
+      </h1>
+      <p class="text-sm text-gray-600 mt-1">{{ products|length }} item{{ '' if products|length == 1 else 's' }} found</p>
+    </div>
+
+    <!-- Sort -->
+    <form method="get" action="{{ url_for('shop') }}" class="flex items-center gap-2">
+      <input type="hidden" name="q" value="{{ q }}">
+      <input type="hidden" name="category" value="{{ cat_slug }}">
+      <input type="hidden" name="tag" value="{{ tag }}">
+      <label class="text-xs uppercase tracking-widest font-bold text-gray-500">Sort:</label>
+      <select name="sort" onchange="this.form.submit()" class="input text-sm cursor-pointer">
+        <option value="featured" {% if sort=='featured' %}selected{% endif %}>Featured</option>
+        <option value="new" {% if sort=='new' %}selected{% endif %}>Newest</option>
+        <option value="price_asc" {% if sort=='price_asc' %}selected{% endif %}>Price: low → high</option>
+        <option value="price_desc" {% if sort=='price_desc' %}selected{% endif %}>Price: high → low</option>
+      </select>
+    </form>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <!-- Sidebar -->
+    <aside class="lg:col-span-3">
+      <div class="lg:sticky lg:top-32 space-y-5">
+        <!-- Search -->
+        <form action="{{ url_for('shop') }}" method="get" class="bg-white rounded-2xl border-2 border-black p-4">
+          <p class="text-xs uppercase tracking-widest font-extrabold mb-2">Search</p>
+          <input type="hidden" name="category" value="{{ cat_slug }}">
+          <input type="hidden" name="sort" value="{{ sort }}">
+          <div class="flex border-2 border-black rounded-full overflow-hidden">
+            <input type="search" name="q" value="{{ q }}" placeholder="What are you craving?" class="flex-1 px-3 py-2 text-sm outline-none">
+            <button type="submit" class="bg-[var(--fuchsia)] text-white px-3">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </button>
+          </div>
+        </form>
+
+        <!-- Categories -->
+        <div class="bg-white rounded-2xl border-2 border-black p-4">
+          <p class="text-xs uppercase tracking-widest font-extrabold mb-3">Categories</p>
+          <ul class="space-y-1">
+            <li><a class="block px-3 py-1.5 text-sm font-bold rounded-lg {% if not cat_slug %}bg-[var(--fuchsia)] text-white{% else %}hover:bg-[var(--lime)]{% endif %}" href="{{ url_for('shop', q=q, sort=sort) }}">All Products</a></li>
+            {% for c in categories %}
+              <li><a class="block px-3 py-1.5 text-sm font-bold rounded-lg {% if cat_slug==c['slug'] %}bg-[var(--fuchsia)] text-white{% else %}hover:bg-[var(--lime)]{% endif %}" href="{{ url_for('shop', category=c['slug'], q=q, sort=sort) }}">{{ c['name'] }}</a></li>
+            {% endfor %}
+          </ul>
+        </div>
+
+        <!-- Tags -->
+        <div class="bg-white rounded-2xl border-2 border-black p-4">
+          <p class="text-xs uppercase tracking-widest font-extrabold mb-3">Popular tags</p>
+          <div class="flex flex-wrap gap-2">
+            {% for t in ['detox','energy','immunity','glow','protein','vegan','breakfast','post-workout'] %}
+              <a href="{{ url_for('shop', tag=t) }}" class="tag-pill border-2 border-black bg-white hover:bg-[var(--lime)] {% if tag==t %}bg-[var(--fuchsia)] text-white{% endif %}">{{ t }}</a>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Product grid -->
+    <div class="lg:col-span-9">
+      {% if products %}
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-5">
+          {% for p in products %}
+            {% include 'public/_product_card.html' %}
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="bg-white rounded-2xl border-2 border-black p-12 text-center">
+          <svg class="mx-auto mb-4 text-gray-400" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <h2 class="text-xl font-extrabold mb-2">No matches</h2>
+          <p class="text-gray-600 mb-4">Try a different search term or browse all our products.</p>
+          <a href="{{ url_for('shop') }}" class="btn-fuchsia rounded-full px-5 py-2.5 font-bold text-sm border-2 border-black inline-block">See everything</a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,104 @@
+{% from "partials/_macros.html" import export_button %}
+{% extends "admin/_layout.html" %}
+{% set active = 'subscriptions' %}
+{% block title %}Admin — Subscriptions{% endblock %}
+{% block page_title %}Subscriptions{% endblock %}
+
+{% block admin_body %}
+<!-- Stat cards -->
+<div class="grid grid-cols-3 gap-4 mb-6">
+  <div class="bg-white rounded-2xl border-2 border-black p-4 shadow-[4px_4px_0_var(--kc-green)]">
+    <p class="text-[10px] uppercase tracking-widest font-bold text-gray-500">Active</p>
+    <p class="text-3xl font-extrabold mt-1 text-[var(--kc-green)]">{{ stats['active'] }}</p>
+  </div>
+  <div class="bg-white rounded-2xl border-2 border-black p-4 shadow-[4px_4px_0_var(--kc-yellow)]">
+    <p class="text-[10px] uppercase tracking-widest font-bold text-gray-500">Pending payment</p>
+    <p class="text-3xl font-extrabold mt-1 text-[var(--kc-orange)]">{{ stats['pending'] }}</p>
+  </div>
+  <div class="bg-white rounded-2xl border-2 border-black p-4 shadow-[4px_4px_0_var(--kc-dark)]">
+    <p class="text-[10px] uppercase tracking-widest font-bold text-gray-500">Cancelled</p>
+    <p class="text-3xl font-extrabold mt-1 text-gray-500">{{ stats['cancelled'] }}</p>
+  </div>
+</div>
+
+<div class="bg-white rounded-2xl border-2 border-black p-5">
+  <!-- Toolbar / filters -->
+  <form method="get" action="{{ url_for('admin_subscriptions') }}" class="flex flex-wrap items-center gap-3 mb-4">
+    <select name="region" onchange="this.form.submit()" class="input text-sm">
+      <option value="">All regions</option>
+      <option value="NG" {% if region=='NG' %}selected{% endif %}>Nigeria</option>
+      <option value="MU" {% if region=='MU' %}selected{% endif %}>Mauritius</option>
+      <option value="GL" {% if region=='GL' %}selected{% endif %}>Global</option>
+    </select>
+    <select name="status" onchange="this.form.submit()" class="input text-sm">
+      <option value="">All statuses</option>
+      <option value="active"           {% if status=='active' %}selected{% endif %}>Active</option>
+      <option value="pending_payment"  {% if status=='pending_payment' %}selected{% endif %}>Pending payment</option>
+      <option value="cancelled"        {% if status=='cancelled' %}selected{% endif %}>Cancelled</option>
+    </select>
+    {% if region or status %}
+      <a href="{{ url_for('admin_subscriptions') }}" class="text-xs font-bold uppercase tracking-wider hover:text-[var(--fuchsia)]">Clear</a>
+    {% endif %}
+    {{ export_button(url_for('admin_subscriptions_export'), 'Export CSV', extra_class='ml-auto') }}
+  </form>
+
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="text-[11px] uppercase tracking-widest text-gray-500 border-b border-gray-200">
+        <tr>
+          <th class="text-left py-2">Customer</th>
+          <th class="text-left">Plan</th>
+          <th class="text-left">Cycle</th>
+          <th class="text-left">Region</th>
+          <th class="text-right">Price</th>
+          <th class="text-left">Status</th>
+          <th class="text-left">Started</th>
+          <th class="text-right">Order</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for s in subs %}
+        <tr class="border-b border-dashed border-gray-200">
+          <td class="py-2">
+            <p class="font-bold">{{ s['full_name'] or '—' }}</p>
+            <p class="text-xs text-gray-500">{{ s['email'] }}</p>
+          </td>
+          <td class="py-2">{{ s['plan_name'] }}</td>
+          <td class="py-2">{{ s['billing_cycle']|title }}</td>
+          <td class="py-2"><span class="badge-square bg-gray-100 border border-[var(--kc-dark)]">{{ s['region'] }}</span></td>
+          <td class="py-2 text-right font-bold">{{ format_money(s['price'], s['region']) }}</td>
+          <td class="py-2">
+            {% if s['status'] == 'active' %}
+              <span class="badge-square bg-[var(--kc-green)] text-white">Active</span>
+            {% elif s['status'] == 'pending_payment' %}
+              <span class="badge-square bg-[var(--kc-yellow)] text-[var(--kc-dark)]">Pending</span>
+            {% else %}
+              <span class="badge-square bg-gray-200 text-gray-700">Cancelled</span>
+            {% endif %}
+          </td>
+          <td class="py-2 text-xs text-gray-500">{{ s['started_at'][:10] if s['started_at'] else '—' }}</td>
+          <td class="py-2 text-right">
+            {% if s['order_id'] %}
+              <a href="{{ url_for('admin_order_detail', order_id=s['order_id']) }}" class="text-xs font-bold hover:text-[var(--fuchsia)]">View →</a>
+            {% else %}<span class="text-xs text-gray-400">—</span>{% endif %}
+          </td>
+          <td class="py-2 text-right">
+            {% if s['status'] == 'active' %}
+            <form method="post" action="{{ url_for('admin_subscription_cancel', sid=s['id']) }}" class="inline"
+                  data-confirm="Cancel this active subscription? The customer is notified."
+                  data-confirm-title="Cancel subscription?" data-confirm-label="Yes, cancel">
+              <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+              <button class="text-rose-600 hover:underline text-xs font-bold uppercase tracking-wider">Cancel</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="9" class="text-center py-8 text-gray-500">No subscriptions match these filters.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

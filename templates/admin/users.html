@@ -1,0 +1,77 @@
+{% from "partials/_macros.html" import export_button %}
+{% extends "admin/_layout.html" %}
+{% set active = 'users' %}
+{% block title %}Admin — Customers{% endblock %}
+{% block page_title %}Customers{% endblock %}
+
+{% block admin_body %}
+<div class="bg-white rounded-2xl border-2 border-black p-5">
+  <form method="get" action="{{ url_for('admin_users') }}" class="flex flex-wrap items-center gap-3 mb-4">
+    <div class="flex flex-1 min-w-[220px] border-2 border-black rounded-full overflow-hidden">
+      <input type="search" name="q" value="{{ q }}" placeholder="Name or email..." class="flex-1 px-3 py-2 text-sm outline-none">
+      <button type="submit" class="bg-[var(--fuchsia)] text-white px-3">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </button>
+    </div>
+    <select name="region" onchange="this.form.submit()" class="input text-sm">
+      <option value="">All regions</option>
+      <option value="NG" {% if region=='NG' %}selected{% endif %}>Nigeria</option>
+      <option value="MU" {% if region=='MU' %}selected{% endif %}>Mauritius</option>
+      <option value="GL" {% if region=='GL' %}selected{% endif %}>Global</option>
+    </select>
+    <select name="status" onchange="this.form.submit()" class="input text-sm">
+      <option value="">All statuses</option>
+      <option value="active" {% if status=='active' %}selected{% endif %}>Active</option>
+      <option value="suspended" {% if status=='suspended' %}selected{% endif %}>Suspended</option>
+      <option value="deleted" {% if status=='deleted' %}selected{% endif %}>Deleted</option>
+    </select>
+    {% if q or region or status %}
+      <a href="{{ url_for('admin_users') }}" class="text-xs font-bold uppercase tracking-wider hover:text-[var(--fuchsia)]">Clear</a>
+    {% endif %}
+    {{ export_button(url_for('admin_users_export'), 'Export CSV', extra_class='ml-auto') }}
+  </form>
+
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="text-[11px] uppercase tracking-widest text-gray-500 border-b-2 border-black">
+        <tr>
+          <th class="text-left py-2">Customer</th>
+          <th class="text-left">Phone</th>
+          <th class="text-left">Region</th>
+          <th class="text-left">Status</th>
+          <th class="text-left">Joined</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for u in users %}
+        <tr class="border-b border-dashed border-gray-200 hover:bg-[var(--lime)]/10">
+          <td class="py-2">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-full bg-[var(--lime)] border-2 border-black flex items-center justify-center font-extrabold text-xs">
+                {{ (u['full_name'][:1] | upper) if u['full_name'] else '?' }}
+              </div>
+              <div>
+                <a href="{{ url_for('admin_user_detail', uid=u['id']) }}" class="font-bold hover:text-[var(--fuchsia)]">{{ u['full_name'] or '—' }}</a>
+                <p class="text-[11px] text-gray-500">{{ u['email'] }}</p>
+              </div>
+            </div>
+          </td>
+          <td class="py-2 text-gray-700">{{ u['phone'] or '—' }}</td>
+          <td class="py-2"><span class="badge-square bg-gray-100 border border-black">{{ u['region'] or '—' }}</span></td>
+          <td class="py-2">
+            <span class="badge-square {% if u['status']=='active' %}bg-[var(--lime)] text-black{% elif u['status']=='suspended' %}bg-[var(--yellow)] text-black{% else %}bg-gray-200 text-gray-700{% endif %}">{{ u['status'] }}</span>
+          </td>
+          <td class="py-2 text-xs text-gray-500">{{ u['created_at'][:10] }}</td>
+          <td class="py-2 text-right">
+            <a href="{{ url_for('admin_user_detail', uid=u['id']) }}" class="text-xs font-bold uppercase tracking-wider hover:text-[var(--fuchsia)]">View</a>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6" class="text-center py-8 text-gray-500">No customers match these filters.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

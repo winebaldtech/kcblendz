@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Refund Policy — KCBlendz{% endblock %}
+
+{% block content %}
+<section class="max-w-3xl mx-auto px-4 py-12">
+  <p class="text-[var(--fuchsia)] uppercase tracking-widest text-xs font-extrabold mb-2">Legal</p>
+  <h1 class="text-4xl font-extrabold mb-2">Refund & Replacement Policy</h1>
+  <p class="text-sm text-gray-500 mb-8">Last updated: {{ current_year }}</p>
+
+  <div class="prose max-w-none space-y-5 text-gray-700">
+    <p>Because our smoothies, juices, and wellness bowls are made fresh and perishable, our refund and replacement policy differs slightly from typical e-commerce.</p>
+
+    <h2 class="text-xl font-extrabold text-black mt-6">Fresh products (smoothies, juices, salads, bowls, popsicles)</h2>
+    <p>Once a fresh product has been delivered, we cannot accept returns. However, if the product arrived in poor condition — leaked, spoiled, melted, or visibly different from what you ordered — please contact us within 24 hours of delivery with photos. We will, at our discretion, either:</p>
+    <ul class="list-disc pl-6 space-y-1">
+      <li>Re-deliver the items at no cost, or</li>
+      <li>Issue a full refund to your original payment method.</li>
+    </ul>
+
+    <h2 class="text-xl font-extrabold text-black mt-6">Shelf-stable products (dried fruits, fruit powders, teas, kiddies packs)</h2>
+    <p>Unopened, undamaged shelf-stable items may be returned within 14 days of delivery for a full refund or replacement. Customer covers return shipping unless the item was damaged or incorrect. Once we receive and inspect the return, refunds are processed within 5–7 business days.</p>
+
+    <h2 class="text-xl font-extrabold text-black mt-6">Cancellations</h2>
+    <p>You can cancel fresh orders up to 2 hours before the delivery slot for a full refund. After production has begun, we are unable to cancel. Cancellations for shelf-stable items are accepted any time before the order is dispatched.</p>
+
+    <h2 class="text-xl font-extrabold text-black mt-6">How to request a refund</h2>
+    <p>Email <a class="link" href="mailto:hello@kcblendz.com">hello@kcblendz.com</a> or message us on WhatsApp at <a class="link" href="https://wa.me/2348024655191">+234 802 4655 191</a> with your order number and photos (where applicable).</p>
+
+    <h2 class="text-xl font-extrabold text-black mt-6">Refund processing time</h2>
+    <p>Card and PayPal refunds typically appear within 5–10 business days. Bank transfer refunds are issued within 3 business days. Specific timing depends on your bank.</p>
+  </div>
+</section>
+{% endblock %}

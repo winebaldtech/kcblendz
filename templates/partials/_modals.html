@@ -1,0 +1,70 @@
+{# ─── Reusable confirm-dialog macro ─────────────────────────────────────────
+   USAGE  (inside any template):
+
+     {% from 'partials/_modals.html' import confirm_form %}
+     {{ confirm_form(
+          action_url=url_for('admin_product_delete', pid=p['id']),
+          trigger_label='Disable',
+          title='Disable this product?',
+          message='Customers won\'t see it, but past order links keep working.',
+          confirm_label='Yes, disable',
+          danger=True,
+          trigger_class='text-xs font-bold uppercase tracking-wider text-rose-600 hover:underline'
+     ) }}
+
+   Renders a button + a hidden <dialog> using the native <dialog> element so
+   it's accessible, focus-trapped and dismissable on Esc out-of-the-box. Falls
+   back to a visible centred modal in browsers that don't support <dialog>
+   (IE11 doesn't — but it's < 0.1% of traffic and the form still submits if a
+   user just clicks the button).
+#}
+{% macro confirm_form(action_url, trigger_label, title, message,
+                      confirm_label='Confirm', cancel_label='Cancel',
+                      danger=False, trigger_class='btn-outline-dark rounded-full px-3 py-1.5 text-xs font-bold',
+                      method='post', hidden={}) %}
+  {% set dlg_id = 'cf-' ~ range(100000, 999999) | random %}
+  <button type="button"
+          class="{{ trigger_class }}"
+          onclick="document.getElementById('{{ dlg_id }}').showModal()">
+    {{ trigger_label }}
+  </button>
+
+  <dialog id="{{ dlg_id }}"
+          class="rounded-2xl border-2 border-[var(--kc-dark)] p-0 max-w-md w-[92%] backdrop:bg-black/40 backdrop:backdrop-blur-sm">
+    <form method="{{ method }}" action="{{ action_url }}" class="bg-white">
+      <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+      {% for k, v in hidden.items() %}
+        <input type="hidden" name="{{ k }}" value="{{ v }}">
+      {% endfor %}
+
+      <header class="px-5 pt-5 pb-3 flex items-start gap-3">
+        <span class="w-10 h-10 rounded-full {% if danger %}bg-rose-100 text-rose-600{% else %}bg-[var(--kc-yellow)]/40 text-[var(--kc-orange)]{% endif %} flex items-center justify-center shrink-0">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9"  x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+        </span>
+        <div class="min-w-0">
+          <h3 class="font-extrabold text-lg leading-tight text-[var(--kc-dark)]">{{ title }}</h3>
+          <p class="text-sm text-gray-600 mt-1">{{ message }}</p>
+        </div>
+      </header>
+
+      <footer class="px-5 pb-5 pt-3 flex items-center justify-end gap-2">
+        <button type="button"
+                onclick="this.closest('dialog').close()"
+                class="btn-outline-dark rounded-full px-4 py-2 text-xs font-extrabold uppercase tracking-wider">
+          {{ cancel_label }}
+        </button>
+        <button type="submit"
+                class="{% if danger %}bg-rose-600 hover:bg-rose-700 text-white{% else %}btn-orange{% endif %}
+                       rounded-full px-4 py-2 text-xs font-extrabold uppercase tracking-wider
+                       border-2 border-[var(--kc-dark)] shadow-[3px_3px_0_var(--kc-dark)]
+                       hover:translate-y-[-1px] transition">
+          {{ confirm_label }}
+        </button>
+      </footer>
+    </form>
+  </dialog>
+{% endmacro %}

@@ -1,0 +1,106 @@
+{% extends "admin/_layout.html" %}
+{% set active = 'faqs' %}
+{% block page_title %}FAQs{% endblock %}
+
+{% block admin_body %}
+<div class="grid lg:grid-cols-3 gap-5">
+  <!-- New FAQ form -->
+  <form method="post" class="bg-white border-2 border-black rounded-2xl p-5 shadow-[4px_4px_0_#000] space-y-3 lg:col-span-1">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <input type="hidden" name="action" value="create">
+    <h2 class="font-display text-2xl">Add FAQ</h2>
+
+    <label class="block">
+      <span class="text-[10px] uppercase tracking-widest font-bold text-gray-500">Category</span>
+      <select name="category" class="w-full border-2 border-black rounded-xl px-3 py-1.5 bg-white">
+        <option value="customers">Customers</option>
+        <option value="team">Our Team</option>
+        <option value="insights">Insights</option>
+      </select>
+    </label>
+    <label class="block">
+      <span class="text-[10px] uppercase tracking-widest font-bold text-gray-500">Question</span>
+      <input name="question" required class="w-full border-2 border-black rounded-xl px-3 py-1.5">
+    </label>
+    <label class="block">
+      <span class="text-[10px] uppercase tracking-widest font-bold text-gray-500">Answer</span>
+      <textarea name="answer" required rows="4" class="w-full border-2 border-black rounded-xl px-3 py-1.5"></textarea>
+    </label>
+    <button class="w-full bg-[var(--kc-orange)] text-white border-2 border-black rounded-full py-2 font-extrabold uppercase tracking-wider text-xs shadow-[3px_3px_0_#000]">Add FAQ</button>
+  </form>
+
+  <!-- List -->
+  <div class="lg:col-span-2 space-y-4">
+    {% for cat, label in [('customers','Customers'), ('team','Our Team'), ('insights','Insights')] %}
+      {% set group = faqs | selectattr('category','equalto',cat) | list %}
+      {% if group %}
+      <section>
+        <h3 class="text-xs uppercase tracking-[0.25em] font-extrabold text-gray-500 mb-2">{{ label }} · {{ group|length }}</h3>
+        <ul class="space-y-2">
+          {% for f in group %}
+          <li class="bg-white border-2 border-black rounded-xl p-3 shadow-[2px_2px_0_#000]">
+            <div class="flex items-start gap-3">
+              <div class="flex-1 min-w-0">
+                <p class="font-extrabold text-sm">{{ f['question'] }}
+                  {% if not f['is_published'] %}<span class="ml-2 text-[10px] uppercase tracking-widest bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full">Hidden</span>{% endif %}
+                </p>
+                <p class="text-sm text-gray-700 mt-1 line-clamp-3">{{ f['answer'] }}</p>
+              </div>
+              <div class="shrink-0 flex items-center gap-3">
+                <button type="button" onclick="this.closest('li').querySelector('[data-edit]').classList.toggle('hidden')"
+                        class="text-[var(--kc-green)] hover:underline text-xs font-bold uppercase tracking-wider">Edit</button>
+                <form method="post" class="inline">
+                  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+                  <input type="hidden" name="action" value="toggle">
+                  <input type="hidden" name="faq_id" value="{{ f['id'] }}">
+                  <button class="text-amber-600 hover:underline text-xs font-bold uppercase tracking-wider">{{ 'Show' if not f['is_published'] else 'Hide' }}</button>
+                </form>
+                <form method="post" class="inline"
+                      data-confirm="This permanently removes the FAQ." data-confirm-title="Delete FAQ?" data-confirm-label="Delete">
+                  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+                  <input type="hidden" name="action" value="delete">
+                  <input type="hidden" name="faq_id" value="{{ f['id'] }}">
+                  <button class="text-rose-600 hover:text-rose-700 text-xs font-bold uppercase tracking-wider">Delete</button>
+                </form>
+              </div>
+            </div>
+            <form method="post" data-edit class="hidden mt-3 bg-[var(--bg)] border-2 border-black rounded-xl p-4 space-y-3">
+              <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+              <input type="hidden" name="action" value="update">
+              <input type="hidden" name="faq_id" value="{{ f['id'] }}">
+              <div class="grid grid-cols-2 gap-3">
+                <label class="block">
+                  <span class="text-[10px] uppercase tracking-widest font-bold text-gray-500">Category</span>
+                  <select name="category" class="w-full border-2 border-black rounded-xl px-3 py-1.5 bg-white">
+                    <option value="customers" {{ 'selected' if f['category']=='customers' }}>Customers</option>
+                    <option value="team" {{ 'selected' if f['category']=='team' }}>Our Team</option>
+                    <option value="insights" {{ 'selected' if f['category']=='insights' }}>Insights</option>
+                  </select>
+                </label>
+                <label class="block">
+                  <span class="text-[10px] uppercase tracking-widest font-bold text-gray-500">Sort order</span>
+                  <input type="number" name="sort_order" value="{{ f['sort_order'] or 0 }}" class="w-full border-2 border-black rounded-xl px-3 py-1.5">
+                </label>
+              </div>
+              <label class="block">
+                <span class="text-[10px] uppercase tracking-widest font-bold text-gray-500">Question</span>
+                <input name="question" required value="{{ f['question']|e }}" class="w-full border-2 border-black rounded-xl px-3 py-1.5">
+              </label>
+              <label class="block">
+                <span class="text-[10px] uppercase tracking-widest font-bold text-gray-500">Answer</span>
+                <textarea name="answer" required rows="3" class="w-full border-2 border-black rounded-xl px-3 py-1.5">{{ f['answer'] }}</textarea>
+              </label>
+              <div class="flex gap-2">
+                <button class="btn-green rounded-full px-5 py-2 text-xs font-extrabold uppercase tracking-wider border-2 border-black">Save changes</button>
+                <button type="button" onclick="this.closest('[data-edit]').classList.add('hidden')" class="btn-outline-dark rounded-full px-5 py-2 text-xs font-extrabold uppercase tracking-wider">Cancel</button>
+              </div>
+            </form>
+          </li>
+          {% endfor %}
+        </ul>
+      </section>
+      {% endif %}
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

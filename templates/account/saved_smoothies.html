@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Saved Smoothies — KCBlendz{% endblock %}
+{% set active = 'saved' %}
+
+{% block content %}
+<section class="max-w-7xl mx-auto px-4 py-8">
+  <h1 class="text-3xl md:text-4xl font-extrabold mb-6">Your saved blends</h1>
+
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    {% include 'account/_sidebar.html' %}
+
+    <div class="lg:col-span-9">
+      {% if saved %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {% for s in saved %}
+          <div class="bg-white rounded-2xl border-2 border-black overflow-hidden card-market">
+            <div class="aspect-square bg-gradient-to-br from-[var(--lime)] via-[var(--yellow)] to-[var(--fuchsia)] p-6 flex items-center justify-center">
+              <img src="{{ url_for('static', filename='img/custom-cup.svg') }}" alt="" class="w-32 h-32 drop-shadow-[4px_4px_0_rgba(0,0,0,0.3)]">
+            </div>
+            <div class="p-4">
+              <p class="font-extrabold text-base mb-1">{{ s['name'] }}</p>
+              <p class="text-xs text-gray-500 mb-3">{{ s['region'] }} · {{ format_money(s['price'], s['region']) }}</p>
+              <div class="flex items-center gap-2">
+                {% if s['region'] == current_region() %}
+                <form action="{{ url_for('account_saved_add', sid=s['id']) }}" method="post" class="flex-1">
+                  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn-fuchsia w-full rounded-full px-3 py-2 text-xs font-extrabold uppercase tracking-wider border-2 border-black">
+                    Add to cart
+                  </button>
+                </form>
+                {% else %}
+                <span class="flex-1 text-center text-[10px] uppercase tracking-widest font-bold text-gray-500 py-2">Switch to {{ s['region'] }} to order</span>
+                {% endif %}
+                <form action="{{ url_for('account_saved_delete', sid=s['id']) }}" method="post" data-confirm="Your custom recipe will be removed from your saved list." data-confirm-title="Delete saved blend?" data-confirm-label="Delete">
+                  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+                  <button type="submit" class="icon-btn text-rose-600" aria-label="Delete">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/></svg>
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="bg-white rounded-2xl border-2 border-black p-12 text-center">
+          <svg class="mx-auto mb-4 text-[var(--kc-green)]" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+          <h2 class="text-xl font-extrabold mb-2">No saved blends yet</h2>
+          <p class="text-gray-600 mb-4">Build a custom smoothie and save it for quick reordering.</p>
+          <a href="{{ url_for('builder') }}" class="btn-fuchsia rounded-full px-5 py-2.5 font-bold text-sm border-2 border-black inline-block">Build a blend</a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Two-factor verification — KCBlendz{% endblock %}
+
+{% block content %}
+<section class="max-w-md mx-auto px-4 py-16">
+  <div class="bg-white border-2 border-[var(--kc-dark)] rounded-2xl p-7 shadow-[5px_5px_0_var(--kc-dark)]">
+    <div class="text-center mb-6">
+      <div class="w-14 h-14 rounded-full bg-[var(--kc-yellow)] mx-auto flex items-center justify-center border-2 border-[var(--kc-dark)] shadow-[3px_3px_0_var(--kc-orange)]">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </div>
+      <h1 class="font-display text-3xl mt-3">Verify it's you</h1>
+      <p class="text-sm text-gray-600 mt-1">Open your authenticator app and enter the latest 6-digit code for KCBlendz.</p>
+    </div>
+
+    <form method="post" class="space-y-4">
+      <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+      <label class="block">
+        <span class="text-[10px] uppercase tracking-widest font-bold text-gray-500 mb-1 block">6-digit code</span>
+        <input name="code" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code"
+               maxlength="6" required autofocus
+               class="w-full border-2 border-[var(--kc-dark)] rounded-xl px-4 py-3 text-center text-2xl font-mono tracking-[0.4em] outline-none focus:bg-[var(--kc-yellow)]/20">
+      </label>
+      <button class="w-full btn-orange border-2 border-[var(--kc-dark)] rounded-full py-3 font-extrabold uppercase tracking-wider text-sm shadow-[3px_3px_0_var(--kc-dark)]">
+        Verify and sign in
+      </button>
+    </form>
+
+    <p class="text-xs text-gray-500 mt-5 text-center">
+      Lost access to your authenticator? <a href="{{ url_for('contact') }}" class="text-[var(--fuchsia)] underline font-bold">Contact support</a>.
+    </p>
+  </div>
+</section>
+{% endblock %}

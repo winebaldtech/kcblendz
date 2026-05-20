@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Request a refund — KCBlendz{% endblock %}
+
+{% block content %}
+<section class="bg-[var(--kc-cream)] py-10 border-b-2 border-[var(--kc-dark)]">
+  <div class="max-w-2xl mx-auto px-4">
+    <h1 class="font-display text-4xl">Request a refund</h1>
+    <p class="text-gray-700 mt-1">Order <span class="font-mono font-bold">{{ order['order_number'] }}</span> · {{ format_money(order['total'], order['region']) }}</p>
+  </div>
+</section>
+
+<section class="max-w-2xl mx-auto px-4 py-10">
+  {% if existing and existing['status'] in ['pending', 'approved'] %}
+    <div class="bg-[var(--kc-yellow)]/30 border-2 border-[var(--kc-dark)] rounded-2xl p-5 mb-6">
+      <p class="font-extrabold">A refund request is already open for this order.</p>
+      <p class="text-sm mt-1">Status: <span class="font-bold uppercase tracking-wider">{{ existing['status'] }}</span> · submitted {{ existing['created_at'][:16] }}</p>
+      {% if existing['admin_response'] %}<p class="text-sm mt-2 italic">"{{ existing['admin_response'] }}"</p>{% endif %}
+    </div>
+  {% else %}
+    <form method="post" class="bg-white border-2 border-[var(--kc-dark)] rounded-2xl p-6 shadow-[5px_5px_0_var(--kc-dark)] space-y-4">
+      <input type="hidden" name="_csrf"  value="{{ csrf_token() }}">
+      {% if token %}<input type="hidden" name="token" value="{{ token }}">{% endif %}
+
+      <div>
+        <label class="text-xs uppercase tracking-widest font-bold text-gray-600 mb-1 block">Reason</label>
+        <select name="reason" required class="w-full border-2 border-[var(--kc-dark)] rounded-xl px-4 py-2 bg-white">
+          <option value="">Choose one…</option>
+          <option value="Damaged on arrival">Damaged on arrival</option>
+          <option value="Wrong item received">Wrong item received</option>
+          <option value="Quality issue">Quality issue (taste / freshness)</option>
+          <option value="Missing items">Missing items from order</option>
+          <option value="Late delivery">Late delivery</option>
+          <option value="Changed mind">Changed mind / no longer needed</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="text-xs uppercase tracking-widest font-bold text-gray-600 mb-1 block">Details (optional but helpful)</label>
+        <textarea name="details" rows="4" placeholder="A photo or description helps us resolve this faster."
+                  class="w-full border-2 border-[var(--kc-dark)] rounded-xl px-4 py-2"></textarea>
+      </div>
+
+      <div class="bg-gray-50 border border-[var(--kc-dark)]/20 rounded-xl p-3 text-xs text-gray-600 leading-relaxed">
+        Our team reviews refund requests within 12 hours. If approved, refunds go back to your original payment method within 3–7 business days depending on bank/processor.
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button class="btn-orange border-2 border-[var(--kc-dark)] rounded-full px-6 py-2.5 font-extrabold uppercase tracking-wider text-sm shadow-[3px_3px_0_var(--kc-dark)]">
+          Submit request
+        </button>
+        <a href="javascript:history.back()" class="btn-outline-dark rounded-full px-4 py-2.5 text-xs font-extrabold uppercase tracking-wider">Cancel</a>
+      </div>
+    </form>
+  {% endif %}
+</section>
+{% endblock %}

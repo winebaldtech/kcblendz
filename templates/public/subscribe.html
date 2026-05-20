@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Subscribe & save — KCBlendz{% endblock %}
+
+{% block content %}
+<section class="bg-gradient-to-br from-[var(--kc-cream)] via-white to-[var(--kc-yellow)]/20 py-16 border-b-2 border-[var(--kc-dark)]">
+  <div class="max-w-5xl mx-auto px-4 text-center">
+    <span class="inline-block bg-[var(--kc-yellow)] text-[var(--kc-dark)] text-[11px] uppercase tracking-[0.25em] font-extrabold px-3 py-1 rounded-full border-2 border-[var(--kc-dark)]">Subscribe & save</span>
+    <h1 class="font-display text-5xl md:text-6xl mt-4">Wellness on autopilot</h1>
+    <p class="text-lg text-gray-700 mt-4 max-w-2xl mx-auto">Get your blends on a rhythm. Pause, swap or cancel any time — no judgments, no fine print.</p>
+
+    <!-- Billing cycle toggle -->
+    <div class="inline-flex items-center bg-white border-2 border-[var(--kc-dark)] rounded-full p-1 mt-6 shadow-[3px_3px_0_var(--kc-dark)]">
+      <button class="cycle-btn cycle-active px-5 py-2 text-xs font-extrabold uppercase tracking-wider rounded-full bg-[var(--kc-dark)] text-white" data-cycle="monthly">Monthly</button>
+      <button class="cycle-btn px-5 py-2 text-xs font-extrabold uppercase tracking-wider rounded-full" data-cycle="yearly">Yearly <span class="text-[10px] text-emerald-600 font-bold">— save 17%</span></button>
+    </div>
+  </div>
+</section>
+
+<section class="max-w-6xl mx-auto px-4 py-12">
+  <div class="grid md:grid-cols-3 gap-5">
+    {% for p in plans %}
+    {% set features = p['features_json']|from_json if p['features_json'] is string else p['features_json'] %}
+    {% set price_field = 'price_ngn' if region == 'NG' else ('price_mur' if region == 'MU' else 'price_usd') %}
+    <article class="relative bg-white border-2 border-[var(--kc-dark)] rounded-2xl p-6 shadow-[5px_5px_0_var(--kc-dark)] flex flex-col {% if p['is_featured'] %}md:scale-105 md:-mt-2 ring-2 ring-[var(--kc-orange)]{% endif %}">
+      {% if p['is_featured'] %}
+        <span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-[var(--kc-orange)] text-white text-[10px] uppercase tracking-[0.25em] font-extrabold px-3 py-1 rounded-full border-2 border-[var(--kc-dark)]">Most popular</span>
+      {% endif %}
+      <h3 class="font-display text-3xl">{{ p['name'] }}</h3>
+      <p class="text-sm text-gray-600 mt-1">{{ p['tagline'] }}</p>
+
+      <div class="my-5">
+        <p class="text-3xl font-extrabold price-monthly" data-cycle="monthly">
+          {{ format_money(p[price_field ~ '_monthly'], region) }}<span class="text-sm font-semibold text-gray-500">/mo</span>
+        </p>
+        <p class="text-3xl font-extrabold price-yearly hidden" data-cycle="yearly">
+          {{ format_money(p[price_field ~ '_yearly'], region) }}<span class="text-sm font-semibold text-gray-500">/yr</span>
+        </p>
+      </div>
+
+      <ul class="space-y-2 text-sm flex-1">
+        {% for f in features %}
+        <li class="flex items-start gap-2">
+          <svg class="text-[var(--kc-green)] mt-0.5 shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>{{ f }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+
+      <a href="{{ url_for('subscribe_plan', slug=p['slug']) }}?cycle=monthly"
+         data-plan-cta
+         class="mt-6 block text-center {% if p['is_featured'] %}btn-orange{% else %}btn-outline-dark{% endif %} border-2 border-[var(--kc-dark)] rounded-full px-5 py-3 font-extrabold uppercase tracking-wider text-sm shadow-[3px_3px_0_var(--kc-dark)]">
+        Choose {{ p['name'] }}
+      </a>
+    </article>
+    {% endfor %}
+  </div>
+
+  <p class="text-center text-xs text-gray-500 mt-8">Pause or cancel any time from your account. Subscriptions are billed in your store's currency.</p>
+</section>
+
+<script>
+(function(){
+  var current = 'monthly';
+  function set(c){
+    current = c;
+    document.querySelectorAll('.cycle-btn').forEach(function(b){
+      var active = b.dataset.cycle === c;
+      b.classList.toggle('bg-[var(--kc-dark)]', active);
+      b.classList.toggle('text-white', active);
+    });
+    document.querySelectorAll('.price-monthly,.price-yearly').forEach(function(p){
+      p.classList.toggle('hidden', p.dataset.cycle !== c);
+    });
+    document.querySelectorAll('[data-plan-cta]').forEach(function(a){
+      a.href = a.href.replace(/cycle=\w+/, 'cycle=' + c);
+    });
+  }
+  document.querySelectorAll('.cycle-btn').forEach(function(b){
+    b.addEventListener('click', function(){ set(b.dataset.cycle); });
+  });
+})();
+</script>
+{% endblock %}

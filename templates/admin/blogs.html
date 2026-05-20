@@ -1,0 +1,67 @@
+{% extends "admin/_layout.html" %}
+{% set active = 'blogs' %}
+{% block title %}Admin — Wellness Hub{% endblock %}
+{% block page_title %}Wellness Hub posts{% endblock %}
+
+{% block admin_body %}
+<div class="bg-white rounded-2xl border-2 border-black p-5">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-base font-extrabold uppercase tracking-wider">All posts ({{ posts|length }})</h2>
+    <a href="{{ url_for('admin_blog_new') }}" class="btn-fuchsia rounded-full px-5 py-2.5 text-sm font-extrabold uppercase tracking-wider border-2 border-black inline-flex items-center gap-2">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      New post
+    </a>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="text-[11px] uppercase tracking-widest text-gray-500 border-b-2 border-black">
+        <tr>
+          <th class="text-left py-2">Post</th>
+          <th class="text-left">Category</th>
+          <th class="text-left">Author</th>
+          <th class="text-left">Status</th>
+          <th class="text-left">Updated</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for p in posts %}
+        <tr class="border-b border-dashed border-gray-200 hover:bg-[var(--lime)]/10">
+          <td class="py-2">
+            <div class="flex items-center gap-2">
+              <div class="w-14 h-10 rounded-lg border-2 border-black overflow-hidden bg-gray-100 shrink-0">
+                <img src="{{ p['cover_url'] or url_for('static', filename='img/custom-cup.svg') }}" alt="" class="w-full h-full object-cover">
+              </div>
+              <div class="min-w-0">
+                <p class="font-bold truncate">{{ p['title'] }}</p>
+                <p class="text-[10px] text-gray-500 font-mono truncate">/{{ p['slug'] }}</p>
+              </div>
+            </div>
+          </td>
+          <td class="py-2 text-xs">{{ p['category'] or '—' }}</td>
+          <td class="py-2 text-xs">{{ p['author'] }}</td>
+          <td class="py-2">
+            {% if p['is_published'] %}
+              <span class="badge-square bg-[var(--lime)] text-black">Published</span>
+            {% else %}
+              <span class="badge-square bg-gray-200 text-gray-700">Draft</span>
+            {% endif %}
+          </td>
+          <td class="py-2 text-xs text-gray-500">{{ p['updated_at'][:10] if p['updated_at'] else p['created_at'][:10] }}</td>
+          <td class="py-2 text-right">
+            <a href="{{ url_for('admin_blog_edit', pid=p['id']) }}" class="text-xs font-bold uppercase tracking-wider hover:text-[var(--fuchsia)]">Edit</a>
+            <form action="{{ url_for('admin_blog_delete', pid=p['id']) }}" method="post" class="inline ml-2" data-confirm="This will permanently remove the article. The action cannot be undone." data-confirm-title="Delete this article?" data-confirm-label="Delete">
+              <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+              <button type="submit" class="text-xs font-bold uppercase tracking-wider text-rose-600 hover:underline">Delete</button>
+            </form>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6" class="text-center py-8 text-gray-500">No posts yet. <a href="{{ url_for('admin_blog_new') }}" class="link">Create the first one.</a></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

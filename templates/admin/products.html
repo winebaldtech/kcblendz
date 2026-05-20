@@ -1,0 +1,96 @@
+{% from "partials/_macros.html" import export_button %}
+{% extends "admin/_layout.html" %}
+{% set active = 'products' %}
+{% block title %}Admin — Products{% endblock %}
+{% block page_title %}Products{% endblock %}
+
+{% block admin_body %}
+<div class="bg-white rounded-2xl border-2 border-black p-5">
+  <!-- Toolbar -->
+  <div class="flex flex-wrap items-center gap-3 mb-4">
+    <form method="get" action="{{ url_for('admin_products') }}" class="flex items-center gap-2 flex-1 min-w-[260px]">
+      <div class="flex flex-1 border-2 border-black rounded-full overflow-hidden">
+        <input type="search" name="q" value="{{ q }}" placeholder="Search products..." class="flex-1 px-3 py-2 text-sm outline-none">
+        <button type="submit" class="bg-[var(--fuchsia)] text-white px-3">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </button>
+      </div>
+      <select name="category" onchange="this.form.submit()" class="input text-sm">
+        <option value="">All categories</option>
+        {% for c in categories %}<option value="{{ c['slug'] }}" {% if c['slug']==cat %}selected{% endif %}>{{ c['name'] }}</option>{% endfor %}
+      </select>
+    </form>
+    {{ export_button(url_for('admin_products_export'), 'Export CSV') }}
+    <a href="{{ url_for('admin_product_new') }}" class="btn-fuchsia rounded-full px-5 py-2.5 text-sm font-extrabold uppercase tracking-wider border-2 border-black inline-flex items-center gap-2">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      New product
+    </a>
+  </div>
+
+  <!-- Table -->
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="text-[11px] uppercase tracking-widest text-gray-500 border-b-2 border-black">
+        <tr>
+          <th class="text-left py-2">Product</th>
+          <th class="text-left">Category</th>
+          <th class="text-left">NGN</th>
+          <th class="text-left">MUR</th>
+          <th class="text-left">USD</th>
+          <th class="text-left">Stock</th>
+          <th class="text-left">Status</th>
+          <th class="text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for p in products %}
+        <tr class="border-b border-dashed border-gray-200 hover:bg-[var(--lime)]/10">
+          <td class="py-2">
+            <div class="flex items-center gap-2">
+              <div class="w-10 h-10 rounded-lg border-2 border-black overflow-hidden bg-gray-100 shrink-0">
+                <img src="{{ p['image_url'] or url_for('static', filename='img/custom-cup.svg') }}" alt="" class="w-full h-full object-cover">
+              </div>
+              <div class="min-w-0">
+                <p class="font-bold truncate">{{ p['name'] }}</p>
+                <p class="text-[10px] text-gray-500 font-mono truncate">{{ p['slug'] }}</p>
+              </div>
+            </div>
+          </td>
+          <td class="py-2 text-xs">{{ p['category_name'] or '—' }}</td>
+          <td class="py-2 font-mono">{{ '%.0f' % (p['price_ngn'] or 0) }}</td>
+          <td class="py-2 font-mono">{{ '%.0f' % (p['price_mur'] or 0) }}</td>
+          <td class="py-2 font-mono">{{ '%.2f' % (p['price_usd'] or 0) }}</td>
+          <td class="py-2">{{ p['stock'] }}</td>
+          <td class="py-2">
+            {% if p['is_active'] %}
+              <span class="badge-square bg-[var(--lime)] text-black">Active</span>
+            {% else %}
+              <span class="badge-square bg-gray-200 text-gray-700">Disabled</span>
+            {% endif %}
+          </td>
+          <td class="py-2 text-right">
+            <div class="flex items-center gap-3 justify-end">
+              <a href="{{ url_for('admin_product_edit', pid=p['id']) }}" class="text-xs font-bold uppercase tracking-wider hover:text-[var(--fuchsia)]">Edit</a>
+              <form action="{{ url_for('admin_product_toggle', pid=p['id']) }}" method="post" class="inline">
+                <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+                <button type="submit" class="text-xs font-bold uppercase tracking-wider {% if p['is_active'] %}text-amber-600{% else %}text-emerald-600{% endif %} hover:underline">
+                  {% if p['is_active'] %}Disable{% else %}Enable{% endif %}
+                </button>
+              </form>
+              <form action="{{ url_for('admin_product_delete', pid=p['id']) }}" method="post" class="inline"
+                    data-confirm="Removes the product permanently. If it appears in past orders, it'll be disabled instead."
+                    data-confirm-title="Delete {{ p['name']|e }}?" data-confirm-label="Delete">
+                <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+                <button type="submit" class="text-xs font-bold uppercase tracking-wider text-rose-600 hover:underline">Delete</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="8" class="text-center py-8 text-gray-500">No products yet. <a href="{{ url_for('admin_product_new') }}" class="link">Create the first one.</a></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

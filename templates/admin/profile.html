@@ -1,0 +1,208 @@
+{% extends "admin/_layout.html" %}
+{% set active = 'profile' %}
+{% block title %}Admin — Profile{% endblock %}
+{% block page_title %}My profile & settings{% endblock %}
+
+{% block admin_body %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+  <!-- Account card -->
+  <div class="bg-white rounded-2xl border-2 border-black p-5">
+    <div class="flex items-center gap-4 mb-4">
+      <div class="w-16 h-16 rounded-full overflow-hidden border-2 border-black flex items-center justify-center shrink-0
+                  {% if not u['avatar_url'] %}bg-[var(--kc-green)] text-white text-2xl font-extrabold{% endif %}">
+        {% if u['avatar_url'] %}
+          <img src="{{ u['avatar_url'] }}" alt="" class="w-full h-full object-cover">
+        {% else %}
+          {{ (u['full_name'] or 'A')[:1]|upper }}
+        {% endif %}
+      </div>
+      <div class="min-w-0">
+        <p class="font-extrabold text-lg truncate">{{ u['full_name'] }}</p>
+        <p class="text-sm text-gray-500 truncate">{{ u['email'] }}</p>
+        <span class="badge-square bg-[var(--kc-green)] text-white mt-1 inline-block">Administrator</span>
+      </div>
+    </div>
+
+    <!-- Avatar upload -->
+    <div class="border-t-2 border-dashed border-gray-200 pt-4 mb-4">
+      <p class="text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">Profile picture</p>
+      <form method="post" enctype="multipart/form-data" class="flex items-center gap-2">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <input type="hidden" name="action" value="avatar">
+        <input type="file" name="avatar" accept="image/png,image/jpeg,image/gif,image/webp" required
+               class="block flex-1 text-xs file:mr-2 file:px-3 file:py-1.5 file:border-2 file:border-black file:rounded-full file:bg-white file:font-bold file:text-xs file:cursor-pointer">
+        <button class="bg-[var(--kc-orange)] text-white border-2 border-black rounded-full px-3 py-1.5 text-xs font-extrabold uppercase tracking-wider">Upload</button>
+      </form>
+      {% if u['avatar_url'] %}
+      <form method="post" class="mt-2 inline"
+            data-confirm="Your profile picture will be removed." data-confirm-title="Remove profile picture?" data-confirm-label="Remove">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <input type="hidden" name="action" value="avatar_remove">
+        <button class="text-xs font-bold text-rose-600 hover:underline">Remove current picture</button>
+      </form>
+      {% endif %}
+    </div>
+
+    <dl class="text-sm space-y-2 border-t-2 border-dashed border-gray-200 pt-3">
+      <div class="flex justify-between"><dt class="text-gray-500">Phone</dt><dd class="font-bold">{{ u['phone'] or '—' }}</dd></div>
+      <div class="flex justify-between"><dt class="text-gray-500">Member since</dt><dd class="font-bold">{{ (u['created_at'] or '')[:10] }}</dd></div>
+    </dl>
+    <div class="grid grid-cols-3 gap-2 text-center mt-4">
+      <div class="bg-[var(--bg)] rounded-lg p-2"><p class="text-xl font-extrabold">{{ stats.orders }}</p><p class="text-[10px] uppercase tracking-widest text-gray-500">Orders</p></div>
+      <div class="bg-[var(--bg)] rounded-lg p-2"><p class="text-xl font-extrabold">{{ stats.products }}</p><p class="text-[10px] uppercase tracking-widest text-gray-500">Products</p></div>
+      <div class="bg-[var(--bg)] rounded-lg p-2"><p class="text-xl font-extrabold">{{ stats.users }}</p><p class="text-[10px] uppercase tracking-widest text-gray-500">Users</p></div>
+    </div>
+  </div>
+
+  <!-- Edit details -->
+  <div class="bg-white rounded-2xl border-2 border-black p-5">
+    <h2 class="text-base font-extrabold uppercase tracking-wider mb-4">Account details</h2>
+    <form method="post" class="space-y-4">
+      <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+      <input type="hidden" name="action" value="details">
+      <div>
+        <label class="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">Full name</label>
+        <input name="full_name" value="{{ u['full_name'] }}" required
+               class="w-full border-2 border-black rounded-lg px-3 py-2 text-sm">
+      </div>
+      <div>
+        <label class="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">Email</label>
+        <input name="email" type="email" value="{{ u['email'] }}" required
+               class="w-full border-2 border-black rounded-lg px-3 py-2 text-sm">
+      </div>
+      <div>
+        <label class="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">Phone</label>
+        <input name="phone" value="{{ u['phone'] or '' }}"
+               class="w-full border-2 border-black rounded-lg px-3 py-2 text-sm">
+      </div>
+      <button class="btn-green rounded-full px-5 py-2.5 text-sm font-extrabold uppercase tracking-wider border-2 border-black w-full">
+        Save changes
+      </button>
+    </form>
+  </div>
+
+  <!-- Change password -->
+  <div class="bg-white rounded-2xl border-2 border-black p-5">
+    <h2 class="text-base font-extrabold uppercase tracking-wider mb-4">Change password</h2>
+    <form method="post" class="space-y-4">
+      <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+      <input type="hidden" name="action" value="password">
+      <div>
+        <label class="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">Current password</label>
+        <input name="current_password" type="password" required
+               class="w-full border-2 border-black rounded-lg px-3 py-2 text-sm">
+      </div>
+      <div>
+        <label class="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">New password</label>
+        <input name="new_password" type="password" required minlength="8"
+               class="w-full border-2 border-black rounded-lg px-3 py-2 text-sm">
+      </div>
+      <div>
+        <label class="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">Confirm new password</label>
+        <input name="confirm_password" type="password" required minlength="8"
+               class="w-full border-2 border-black rounded-lg px-3 py-2 text-sm">
+      </div>
+      <button class="btn-green rounded-full px-5 py-2.5 text-sm font-extrabold uppercase tracking-wider border-2 border-black w-full">
+        Update password
+      </button>
+    </form>
+  </div>
+
+  <!-- MFA / Two-factor authentication -->
+  <div class="bg-white rounded-2xl border-2 border-black p-5 lg:col-span-3" id="mfa">
+    <div class="flex items-center justify-between mb-4 gap-3 flex-wrap">
+      <div>
+        <h2 class="text-base font-extrabold uppercase tracking-wider">Two-factor authentication</h2>
+        <p class="text-xs text-gray-600 mt-1">An extra layer over your password. Required for admins recommended setup.</p>
+      </div>
+      <span class="badge-square {% if u['mfa_enabled'] %}bg-[var(--kc-green)] text-white{% else %}bg-gray-200 text-gray-700{% endif %} w-fit">
+        {{ 'Enabled' if u['mfa_enabled'] else 'Off' }}
+      </span>
+    </div>
+
+    {% if u['mfa_enabled'] and not mfa_pending_secret %}
+      {# ON — show disable form #}
+      <div class="grid md:grid-cols-2 gap-5">
+        <div class="text-sm text-gray-700 space-y-2">
+          <p class="flex items-center gap-2 text-[var(--kc-green)] font-bold">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            Your account is protected by an authenticator app.
+          </p>
+          <p>Every login will ask for a 6-digit code after your password. Without your phone, no one — including support — can sign in as you.</p>
+        </div>
+        <form method="post" class="space-y-3 bg-rose-50 rounded-xl p-4 border-2 border-rose-200">
+          <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+          <input type="hidden" name="action" value="mfa_disable">
+          <p class="text-xs font-bold text-rose-700 uppercase tracking-widest">Turn off 2FA</p>
+          <input name="current_password" type="password" required
+                 placeholder="Confirm password to disable"
+                 class="w-full border-2 border-rose-300 rounded-lg px-3 py-2 text-sm">
+          <button class="bg-rose-600 hover:bg-rose-700 text-white border-2 border-black rounded-full w-full py-2 text-xs font-extrabold uppercase tracking-wider">
+            Disable 2FA
+          </button>
+        </form>
+      </div>
+
+    {% elif mfa_pending_secret %}
+      {# Mid-setup — show QR + verify form #}
+      <div class="grid md:grid-cols-2 gap-5">
+        <div>
+          <p class="text-sm font-bold mb-1">Step 1 · Scan this code</p>
+          <p class="text-xs text-gray-600 mb-3">Open Google Authenticator, Authy, 1Password — or any TOTP app — and scan or paste the secret below.</p>
+
+          <div class="bg-white border-2 border-black rounded-xl p-4 inline-block">
+            <canvas id="mfa-qr" width="200" height="200" class="block mx-auto"></canvas>
+          </div>
+
+          <details class="mt-3 text-xs">
+            <summary class="cursor-pointer text-[var(--fuchsia)] font-bold">Can't scan? Enter secret manually</summary>
+            <code class="block mt-2 p-2 bg-gray-100 rounded font-mono text-xs break-all">{{ mfa_pending_secret }}</code>
+          </details>
+        </div>
+        <form method="post" class="space-y-3 bg-[var(--kc-yellow)]/20 rounded-xl p-4 border-2 border-[var(--kc-yellow)]">
+          <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+          <input type="hidden" name="action" value="mfa_setup_confirm">
+          <p class="text-sm font-bold">Step 2 · Confirm the code</p>
+          <p class="text-xs text-gray-700">Enter the 6 digits your app is showing right now to prove the secret was saved.</p>
+          <input name="code" inputmode="numeric" pattern="[0-9]*" maxlength="6" required autofocus
+                 class="w-full border-2 border-[var(--kc-dark)] rounded-lg px-3 py-3 text-center text-xl font-mono tracking-[0.3em]">
+          <button class="w-full bg-[var(--kc-orange)] text-white border-2 border-black rounded-full py-2 text-xs font-extrabold uppercase tracking-wider shadow-[2px_2px_0_#000]">
+            Turn on 2FA
+          </button>
+        </form>
+      </div>
+
+      <!-- Client-side QR rendering — pulls QR-code library from CDN. The
+           secret never leaves the browser; the lib only encodes the URI. -->
+      <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+      <script>
+        QRCode.toCanvas(
+          document.getElementById('mfa-qr'),
+          {{ mfa_pending_uri|tojson }},
+          {width: 200, margin: 1, color: {dark: '#1f2937', light: '#ffffff'}}
+        );
+      </script>
+
+    {% else %}
+      {# OFF — offer to enable #}
+      <div class="grid md:grid-cols-2 gap-5 items-start">
+        <ul class="text-sm text-gray-700 space-y-2">
+          <li class="flex items-start gap-2"><svg class="text-[var(--kc-green)] mt-0.5 shrink-0" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Works with Google Authenticator, Authy, 1Password, Microsoft Authenticator.</li>
+          <li class="flex items-start gap-2"><svg class="text-[var(--kc-green)] mt-0.5 shrink-0" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>No SMS or email — codes regenerate every 30 seconds on your phone.</li>
+          <li class="flex items-start gap-2"><svg class="text-[var(--kc-green)] mt-0.5 shrink-0" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Stops anyone who has your password from signing in.</li>
+        </ul>
+        <form method="post" class="bg-[var(--kc-yellow)]/30 rounded-xl p-4 border-2 border-[var(--kc-dark)]">
+          <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+          <input type="hidden" name="action" value="mfa_setup_start">
+          <p class="text-sm font-bold mb-3">Ready in 60 seconds.</p>
+          <button class="w-full btn-orange text-white border-2 border-black rounded-full py-2 text-xs font-extrabold uppercase tracking-wider shadow-[2px_2px_0_#000]">
+            Set up 2FA
+          </button>
+        </form>
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

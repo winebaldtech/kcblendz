@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Reset password — KCBlendz{% endblock %}
+
+{% block content %}
+<section class="min-h-[80vh] flex items-center justify-center px-4 py-12">
+  <div class="w-full max-w-md">
+    <div class="text-center mb-6">
+      <img src="{{ url_for('static', filename='img/logo.png') }}" alt="KCBlendz" class="w-16 h-16 mx-auto rounded-full border-2 border-[var(--kc-dark)] object-cover mb-3 shadow-[3px_3px_0_var(--kc-yellow)]">
+      <h1 class="brand text-4xl">Reset password</h1>
+      <p class="text-sm text-gray-600 mt-1 max-w-xs mx-auto">Enter your email and we'll send a link to reset your password.</p>
+    </div>
+
+    <form action="{{ url_for('forgot_password') }}" method="post" class="bg-white rounded-2xl border-2 border-[var(--kc-dark)] p-6 shadow-[6px_6px_0_var(--kc-orange)] space-y-4">
+      <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+      <div>
+        <label class="label">Email</label>
+        <input type="email" name="email" required autocomplete="email" class="input w-full">
+      </div>
+      <button type="submit" class="btn-orange rounded-full w-full py-3 font-extrabold uppercase tracking-wider text-sm border-2 border-[var(--kc-dark)] shadow-[4px_4px_0_var(--kc-dark)]">Send reset link</button>
+    </form>
+
+    <p class="text-center text-sm mt-6 text-gray-600">
+      Remembered it? <a href="{{ url_for('login') }}" class="link">Back to sign in</a>
+    </p>
+  </div>
+</section>
+{% endblock %}

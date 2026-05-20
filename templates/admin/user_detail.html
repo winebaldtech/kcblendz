@@ -1,0 +1,153 @@
+{% extends "admin/_layout.html" %}
+{% set active = 'users' %}
+{% block title %}Admin — {{ u['full_name'] or u['email'] }}{% endblock %}
+{% block page_title %}{{ u['full_name'] or u['email'] }}{% endblock %}
+
+{% block admin_body %}
+<a href="{{ url_for('admin_users') }}" class="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-wider hover:text-[var(--fuchsia)] mb-4">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+  All customers
+</a>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+  <!-- Profile + actions -->
+  <aside class="space-y-5">
+    <div class="bg-white rounded-2xl border-2 border-black p-5 text-center">
+      <div class="w-20 h-20 rounded-full bg-[var(--lime)] border-2 border-black flex items-center justify-center font-extrabold text-2xl mx-auto mb-3">
+        {{ (u['full_name'][:1] | upper) if u['full_name'] else '?' }}
+      </div>
+      <h2 class="font-extrabold text-lg">{{ u['full_name'] or '—' }}</h2>
+      <p class="text-sm text-gray-600">{{ u['email'] }}</p>
+      {% if u['phone'] %}<p class="text-sm text-gray-600">{{ u['phone'] }}</p>{% endif %}
+      <div class="flex items-center justify-center gap-2 mt-3 flex-wrap">
+        <span class="badge-square {% if u['status']=='active' %}bg-[var(--lime)] text-black{% else %}bg-[var(--yellow)] text-black{% endif %}">{{ u['status'] }}</span>
+        <span class="badge-square bg-gray-100 border border-black">{{ u['role'] }}</span>
+        {% if u['region'] %}<span class="badge-square bg-gray-100 border border-black">{{ u['region'] }}</span>{% endif %}
+      </div>
+      <p class="text-[11px] uppercase tracking-widest text-gray-500 mt-3 font-bold">Joined {{ u['created_at'][:10] }}</p>
+    </div>
+
+    <div class="bg-white rounded-2xl border-2 border-black p-5">
+      <h3 class="text-base font-extrabold uppercase tracking-wider mb-3">Actions</h3>
+      <div class="grid grid-cols-2 gap-2">
+        {% if u['status'] == 'active' %}
+        <form action="{{ url_for('admin_user_status', uid=u['id']) }}" method="post">
+          <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+          <input type="hidden" name="action" value="suspend">
+          <button type="submit" class="w-full px-3 py-2 rounded-full border-2 border-black bg-[var(--yellow)] text-black text-xs font-extrabold uppercase tracking-wider hover:bg-[var(--orange)]">Suspend</button>
+        </form>
+        {% else %}
+        <form action="{{ url_for('admin_user_status', uid=u['id']) }}" method="post">
+          <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+          <input type="hidden" name="action" value="activate">
+          <button type="submit" class="w-full px-3 py-2 rounded-full border-2 border-black bg-[var(--lime)] text-black text-xs font-extrabold uppercase tracking-wider hover:bg-[var(--sky)] hover:text-white">Activate</button>
+        </form>
+        {% endif %}
+        {% if u['role'] == 'customer' %}
+        <form action="{{ url_for('admin_user_status', uid=u['id']) }}" method="post" data-confirm="The user will gain full administrator access immediately." data-confirm-title="Promote to admin?" data-confirm-label="Promote">
+          <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+          <input type="hidden" name="action" value="make_admin">
+          <button type="submit" class="w-full px-3 py-2 rounded-full border-2 border-black bg-[var(--purple)] text-white text-xs font-extrabold uppercase tracking-wider hover:bg-[var(--fuchsia)]">Make admin</button>
+        </form>
+        {% else %}
+        <form action="{{ url_for('admin_user_status', uid=u['id']) }}" method="post" data-confirm="The user will lose all admin access." data-confirm-title="Demote to customer?" data-confirm-label="Demote">
+          <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+          <input type="hidden" name="action" value="make_customer">
+          <button type="submit" class="w-full px-3 py-2 rounded-full border-2 border-black bg-gray-200 text-black text-xs font-extrabold uppercase tracking-wider hover:bg-gray-300">Make customer</button>
+        </form>
+        {% endif %}
+        <form action="{{ url_for('admin_user_status', uid=u['id']) }}" method="post" class="col-span-2" data-confirm="The user will be hidden but their order history is preserved." data-confirm-title="Soft-delete user?" data-confirm-label="Delete">
+          <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+          <input type="hidden" name="action" value="delete">
+          <button type="submit" class="w-full px-3 py-2 rounded-full border-2 border-black bg-rose-500 text-white text-xs font-extrabold uppercase tracking-wider hover:bg-rose-700">Delete account</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Addresses -->
+    {% if addresses %}
+    <div class="bg-white rounded-2xl border-2 border-black p-5">
+      <h3 class="text-base font-extrabold uppercase tracking-wider mb-3">Addresses</h3>
+      <ul class="space-y-3 text-sm">
+        {% for a in addresses %}
+        <li class="border-l-2 border-[var(--fuchsia)] pl-3">
+          <p class="font-bold text-xs uppercase tracking-widest text-gray-500">{{ a['label'] }}</p>
+          <p>{{ a['address_line1'] }}{% if a['address_line2'] %}, {{ a['address_line2'] }}{% endif %}</p>
+          <p class="text-gray-600">{{ a['city'] }}, {{ a['country'] }}</p>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+  </aside>
+
+  <!-- Orders + saved -->
+  <div class="lg:col-span-2 space-y-5">
+    <div class="bg-white rounded-2xl border-2 border-black p-5">
+      <h3 class="text-base font-extrabold uppercase tracking-wider mb-3">Orders ({{ orders|length }})</h3>
+      {% if orders %}
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="text-[11px] uppercase tracking-widest text-gray-500 border-b border-gray-200">
+            <tr><th class="text-left py-2">Order</th><th class="text-left">Date</th><th class="text-left">Status</th><th class="text-right">Total</th></tr>
+          </thead>
+          <tbody>
+          {% for o in orders %}
+            <tr class="border-b border-dashed border-gray-200">
+              <td class="py-2 font-mono"><a href="{{ url_for('admin_order_detail', order_id=o['id']) }}" class="font-bold hover:text-[var(--fuchsia)]">{{ o['order_number'] }}</a></td>
+              <td class="py-2 text-xs text-gray-500">{{ o['created_at'][:10] }}</td>
+              <td class="py-2"><span class="badge-square {% if o['payment_status']=='paid' %}bg-[var(--lime)] text-black{% else %}bg-[var(--yellow)] text-black{% endif %}">{{ o['payment_status'] }}</span></td>
+              <td class="py-2 text-right font-extrabold">{{ format_money(o['total'], o['region']) }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        <p class="text-sm text-gray-500">No orders yet.</p>
+      {% endif %}
+    </div>
+
+    {% if subs %}
+    <div class="bg-white rounded-2xl border-2 border-black p-5">
+      <h3 class="text-base font-extrabold uppercase tracking-wider mb-3">Subscriptions ({{ subs|length }})</h3>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="text-[11px] uppercase tracking-widest text-gray-500 border-b border-gray-200">
+            <tr><th class="text-left py-2">Plan</th><th class="text-left">Cycle</th><th class="text-left">Status</th><th class="text-right">Price</th></tr>
+          </thead>
+          <tbody>
+          {% for s in subs %}
+            <tr class="border-b border-dashed border-gray-200">
+              <td class="py-2 font-bold">{{ s['plan_name'] }}</td>
+              <td class="py-2 text-xs">{{ s['billing_cycle']|title }}</td>
+              <td class="py-2">
+                {% if s['status'] == 'active' %}<span class="badge-square bg-[var(--lime)] text-black">Active</span>
+                {% elif s['status'] == 'pending_payment' %}<span class="badge-square bg-[var(--yellow)] text-black">Pending</span>
+                {% else %}<span class="badge-square bg-gray-200 text-gray-700">Cancelled</span>{% endif %}
+              </td>
+              <td class="py-2 text-right font-extrabold">{{ format_money(s['price'], s['region']) }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if saved %}
+    <div class="bg-white rounded-2xl border-2 border-black p-5">
+      <h3 class="text-base font-extrabold uppercase tracking-wider mb-3">Saved smoothies ({{ saved|length }})</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {% for s in saved %}
+        <div class="border-2 border-black rounded-xl p-3 bg-[var(--bg)]">
+          <p class="font-bold text-sm">{{ s['name'] }}</p>
+          <p class="text-xs text-gray-500">{{ s['region'] }} · {{ format_money(s['price'], s['region']) }}</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

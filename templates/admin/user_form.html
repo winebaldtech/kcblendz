@@ -1,0 +1,53 @@
+{% extends "admin/_layout.html" %}
+{% set active = 'users' %}
+{% block title %}Admin — Create user{% endblock %}
+{% block page_title %}Create user{% endblock %}
+
+{% block admin_body %}
+<a href="{{ url_for('admin_users') }}" class="text-xs font-bold uppercase tracking-wider hover:text-[var(--fuchsia)] mb-4 inline-block">← Back to users</a>
+
+<div class="bg-white rounded-2xl border-2 border-black p-6 max-w-2xl shadow-[4px_4px_0_var(--kc-dark)]">
+  <form method="post" class="space-y-4">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+
+    <div>
+      <label class="text-[11px] uppercase tracking-widest font-extrabold text-gray-500">Full name</label>
+      <input name="full_name" required value="{{ form.get('full_name', '') }}"
+             class="block w-full border-2 border-black rounded-xl px-3 py-2 mt-1">
+    </div>
+
+    <div>
+      <label class="text-[11px] uppercase tracking-widest font-extrabold text-gray-500">Email</label>
+      <input name="email" type="email" required value="{{ form.get('email', '') }}"
+             class="block w-full border-2 border-black rounded-xl px-3 py-2 mt-1">
+    </div>
+
+    <div>
+      <label class="text-[11px] uppercase tracking-widest font-extrabold text-gray-500">Phone (with country code)</label>
+      <input name="phone" type="tel" placeholder="+234… / +230… / +1…" value="{{ form.get('phone', '') }}"
+             class="block w-full border-2 border-black rounded-xl px-3 py-2 mt-1">
+      <p class="text-[11px] text-gray-500 mt-1">Region is auto-set from the country code (+234 → Nigeria, +230 → Mauritius, else Global).</p>
+    </div>
+
+    <div>
+      <label class="text-[11px] uppercase tracking-widest font-extrabold text-gray-500">Role</label>
+      <select name="role" class="block w-full border-2 border-black rounded-xl px-3 py-2 mt-1 bg-white">
+        <option value="customer" {% if form.get('role','customer')=='customer' %}selected{% endif %}>Customer</option>
+        <option value="admin"    {% if form.get('role')=='admin' %}selected{% endif %}>Admin</option>
+      </select>
+    </div>
+
+    <div>
+      <label class="text-[11px] uppercase tracking-widest font-extrabold text-gray-500">Password (optional)</label>
+      <input name="password" type="text" placeholder="Leave blank to auto-generate"
+             class="block w-full border-2 border-black rounded-xl px-3 py-2 mt-1">
+      <p class="text-[11px] text-gray-500 mt-1">If left blank, a temporary password is generated and shown after creation. Share it securely with the user.</p>
+    </div>
+
+    <div class="flex gap-2 pt-2">
+      <button class="btn-green text-white border-2 border-black rounded-full px-5 py-2.5 text-sm font-extrabold uppercase tracking-wider shadow-[3px_3px_0_var(--kc-dark)]">Create user</button>
+      <a href="{{ url_for('admin_users') }}" class="btn-outline-dark rounded-full px-5 py-2.5 text-sm font-extrabold uppercase tracking-wider border-2 border-black">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

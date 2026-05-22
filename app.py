@@ -1469,6 +1469,23 @@ def valid_phone(s):
     return bool(s and PHONE_RE.match(s.strip()))
 
 
+def region_from_phone(phone):
+    """Detect KCBlendz region (NG / MU / GL) from a phone's international
+    dialling code. Defaults to 'GL' when the prefix isn't recognised.
+    +234 → NG · +230 → MU · everything else → GL.
+    """
+    if not phone:
+        return None
+    s = re.sub(r"[^\d+]", "", phone)
+    if s.startswith("+234") or s.startswith("234"):
+        return "NG"
+    if s.startswith("+230") or s.startswith("230"):
+        return "MU"
+    if s.startswith("+"):
+        return "GL"
+    return None
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # MFA — TOTP (RFC 6238) implemented with stdlib only
 # ─────────────────────────────────────────────────────────────────────────────
@@ -2087,8 +2104,10 @@ def checkout():
 
         record_order_event(order_id, "pending", note="Order placed", actor="customer")
 
-        # Clear cart
-        session["cart"] = {"items": [], "region": region}
+        # NOTE: cart is intentionally NOT cleared here.
+        # It is cleared only when payment is confirmed (in the payment success
+        # handlers) so the customer can still recover their items if they
+        # abandon payment, refresh, or change payment method.
         notify_admins(f"New order {order_number}", f"{full_name} placed an order totalling {format_money(total, region)}.",
                       url_for("admin_order_detail", order_id=order_id))
         if u:
@@ -2179,7 +2198,35 @@ def payment(order_id):
     if order["user_id"] and (not u or u["id"] != order["user_id"]):
         if not u or u["role"] != "admin":
             abort(403)
+    # Already paid? Don't re-collect payment — send straight to thanks.
+    if order["payment_status"] == "paid":
+        return redirect(url_for("order_thanks", order_id=order_id))
     return render_template("public/payment.html", order=order)
+
+
+@app.route("/payment/<int:order_id>/change-method", methods=["POST"])
+def payment_change_method(order_id):
+    """Let the customer swap payment method before paying, without losing
+    their cart or having to re-enter checkout details."""
+    db = get_db()
+    order = db.execute("SELECT * FROM orders WHERE id=?", (order_id,)).fetchone()
+    if not order:
+        abort(404)
+    if order["payment_status"] == "paid":
+        flash("This order is already paid.", "info")
+        return redirect(url_for("order_thanks", order_id=order_id))
+    u = current_user()
+    if order["user_id"] and (not u or u["id"] != order["user_id"]):
+        if not u or u["role"] != "admin":
+            abort(403)
+    new_method = request.form.get("payment_method", "").strip()
+    if new_method not in ("card", "paypal", "bank_transfer"):
+        flash("Choose a valid payment method.", "error")
+        return redirect(url_for("payment", order_id=order_id))
+    db.execute("UPDATE orders SET payment_method=?, updated_at=datetime('now') WHERE id=?",
+               (new_method, order_id))
+    db.commit()
+    return redirect(url_for("payment", order_id=order_id))
 
 
 @app.route("/payment/<int:order_id>/process", methods=["POST"])
@@ -2239,6 +2286,9 @@ def payment_process(order_id):
                           url_for("admin_order_detail", order_id=order_id))
         audit("order.paid", "order", order_id, {"reference": reference, "method": "paypal"})
         activate_subscription_for_order(order_id)
+        # Payment confirmed — safe to clear the cart now.
+        if not order["is_subscription"]:
+            session["cart"] = {"items": [], "region": current_region()}
         return redirect(url_for("order_thanks", order_id=order_id))
 
     if method == "bank_transfer":
@@ -2262,6 +2312,10 @@ def payment_process(order_id):
         notify_admins(f"Bank transfer for {order['order_number']}",
                       "A customer uploaded proof of bank transfer. Verify in admin.",
                       url_for("admin_order_detail", order_id=order_id))
+        # Proof submitted — the customer has committed to this order;
+        # safe to clear the cart now even though payment is still pending verification.
+        if not order["is_subscription"]:
+            session["cart"] = {"items": [], "region": current_region()}
         return redirect(url_for("order_thanks", order_id=order_id))
 
     # Card: collect real card data, validate, then mark paid (sandbox).
@@ -2308,6 +2362,9 @@ def payment_process(order_id):
     audit("order.paid", "order", order_id, {"reference": reference, "method": method,
                                               "brand": card["brand"], "last4": card["last4"]})
     activate_subscription_for_order(order_id)
+    # Payment confirmed — safe to clear the cart now.
+    if not order["is_subscription"]:
+        session["cart"] = {"items": [], "region": current_region()}
     return redirect(url_for("order_thanks", order_id=order_id))
 
 
@@ -2390,6 +2447,8 @@ def contact():
     return render_template("public/contact.html")
 @app.route("/faq")
 def faq(): return render_template("public/faq.html")
+@app.route("/careers")
+def careers(): return render_template("public/careers.html")
 @app.route("/privacy")
 def privacy(): return render_template("public/privacy.html")
 @app.route("/terms")
@@ -2446,6 +2505,10 @@ def login():
 
         session.clear()
         session["uid"] = u["id"]
+        # Customer's region follows their saved region (set at signup from
+        # the phone country code), or detected fresh from the phone if missing.
+        user_region = u["region"] or region_from_phone(u["phone"]) or "GL"
+        session["region"] = user_region
         session.permanent = True
         db.execute("UPDATE users SET last_login_at=datetime('now') WHERE id=?", (u["id"],))
         db.commit()
@@ -2517,13 +2580,17 @@ def register():
             for e in errors:
                 flash(e, "error")
             return render_template("auth/register.html", form=request.form)
+        # Auto-detect region from phone country code so the customer is
+        # placed into the right currency store without going back to /store.
+        detected_region = region_from_phone(phone) or current_region() or "GL"
         get_db().execute("""INSERT INTO users (email, password_hash, full_name, phone, region)
             VALUES (?,?,?,?,?)""",
-            (email, generate_password_hash(password), full_name, phone, current_region()))
+            (email, generate_password_hash(password), full_name, phone, detected_region))
         uid = get_db().execute("SELECT last_insert_rowid() AS id").fetchone()["id"]
         get_db().commit()
         session.clear()
         session["uid"] = uid
+        session["region"] = detected_region
         session.permanent = True
         notify_admins(f"New customer: {full_name}", f"{email} just registered.")
         audit("auth.register", "user", uid)
@@ -3144,9 +3211,9 @@ def admin_orders():
     status = request.args.get("status", "").strip()
     region = request.args.get("region", "").strip()
     q = request.args.get("q", "").strip()
-    # Subscription orders (is_subscription=1) are managed under /admin/subscriptions,
-    # not here — this list is for product purchases only.
-    sql = "SELECT * FROM orders WHERE COALESCE(is_subscription,0)=0"
+    # Only paid orders are tracked here — pending/failed ones are noise
+    # to fulfilment staff. They remain reachable via direct order URL if needed.
+    sql = "SELECT * FROM orders WHERE COALESCE(is_subscription,0)=0 AND payment_status='paid'"
     params = []
     if status: sql += " AND order_status=?"; params.append(status)
     if region: sql += " AND region=?"; params.append(region)
@@ -3207,13 +3274,16 @@ def admin_users():
     q = request.args.get("q", "").strip()
     region = request.args.get("region", "").strip()
     status = request.args.get("status", "").strip()
-    sql = "SELECT * FROM users WHERE role='customer'"; params = []
+    role = request.args.get("role", "").strip()
+    sql = "SELECT * FROM users WHERE 1=1"; params = []
+    if role in ("customer", "admin"):
+        sql += " AND role=?"; params.append(role)
     if q: sql += " AND (full_name LIKE ? OR email LIKE ?)"; params += [f"%{q}%"]*2
     if region: sql += " AND region=?"; params.append(region)
     if status: sql += " AND status=?"; params.append(status)
     sql += " ORDER BY created_at DESC"
     users = get_db().execute(sql, params).fetchall()
-    return render_template("admin/users.html", users=users, q=q, region=region, status=status)
+    return render_template("admin/users.html", users=users, q=q, region=region, status=status, role=role)
 
 
 @app.route("/admin/users/<int:uid>")
@@ -3245,10 +3315,72 @@ def admin_user_status(uid):
         get_db().execute("UPDATE users SET role='admin' WHERE id=?", (uid,))
     elif action == "make_customer":
         get_db().execute("UPDATE users SET role='customer' WHERE id=?", (uid,))
+    elif action == "reset_password":
+        # Generate a temporary password and email-style notify the user.
+        temp = secrets.token_urlsafe(9)
+        get_db().execute("UPDATE users SET password_hash=? WHERE id=?",
+                         (generate_password_hash(temp), uid))
+        flash(f"Temporary password set: {temp} — share it with the user securely.", "info")
     get_db().commit()
     audit(f"user.{action}", "user", uid)
-    flash("User updated.", "success")
+    if action != "reset_password":
+        flash("User updated.", "success")
     return redirect(url_for("admin_user_detail", uid=uid))
+
+
+@app.route("/admin/users/new", methods=["GET", "POST"])
+@admin_required
+def admin_user_new():
+    """Admin can create users directly — e.g. for B2B clients or staff."""
+    if request.method == "POST":
+        f = request.form
+        full_name = f.get("full_name", "").strip()
+        email = f.get("email", "").strip().lower()
+        phone = f.get("phone", "").strip()
+        role = f.get("role", "customer")
+        password = f.get("password", "") or secrets.token_urlsafe(10)
+        errors = []
+        if not full_name: errors.append("Full name is required.")
+        if not valid_email(email): errors.append("Enter a valid email.")
+        if get_db().execute("SELECT 1 FROM users WHERE email=?", (email,)).fetchone():
+            errors.append("This email is already registered.")
+        if role not in ("customer", "admin"): errors.append("Choose a valid role.")
+        if errors:
+            for e in errors:
+                flash(e, "error")
+            return render_template("admin/user_form.html", form=f)
+        region = region_from_phone(phone) or "GL"
+        get_db().execute("""INSERT INTO users (email, password_hash, full_name,
+            phone, role, region, status) VALUES (?,?,?,?,?,?,'active')""",
+            (email, generate_password_hash(password), full_name, phone, role, region))
+        uid = get_db().execute("SELECT last_insert_rowid() AS id").fetchone()["id"]
+        get_db().commit()
+        audit("user.create_by_admin", "user", uid, {"role": role, "region": region})
+        flash(f"User created. Temporary password: {password}", "success")
+        return redirect(url_for("admin_user_detail", uid=uid))
+    return render_template("admin/user_form.html", form={})
+
+
+@app.route("/admin/users/<int:uid>/delete", methods=["POST"])
+@admin_required
+def admin_user_delete(uid):
+    """Hard-delete a user if they have no order history; else soft-delete
+    (status='deleted'). Admins cannot delete themselves."""
+    me = current_user()
+    if me and me["id"] == uid:
+        flash("You can't delete your own account from here.", "error")
+        return redirect(url_for("admin_user_detail", uid=uid))
+    db = get_db()
+    has_orders = db.execute("SELECT 1 FROM orders WHERE user_id=? LIMIT 1", (uid,)).fetchone()
+    if has_orders:
+        db.execute("UPDATE users SET status='deleted' WHERE id=?", (uid,))
+        flash("User has order history — soft-deleted instead.", "info")
+    else:
+        db.execute("DELETE FROM users WHERE id=?", (uid,))
+        flash("User permanently deleted.", "info")
+    db.commit()
+    audit("user.delete", "user", uid)
+    return redirect(url_for("admin_users"))
 
 
 @app.route("/admin/users/export.csv")
@@ -4160,7 +4292,7 @@ def admin_orders_export():
     db = get_db()
     rows = db.execute("""SELECT order_number, created_at, region, currency, full_name, email, phone,
         order_status, payment_status, payment_method, subtotal, delivery_fee, discount_amount, total
-        FROM orders WHERE COALESCE(is_subscription,0)=0
+        FROM orders WHERE COALESCE(is_subscription,0)=0 AND payment_status='paid'
         ORDER BY created_at DESC""").fetchall()
     buf = io.StringIO()
     w = csv.writer(buf, quoting=csv.QUOTE_ALL)

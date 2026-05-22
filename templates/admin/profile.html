@@ -27,15 +27,18 @@
     <!-- Avatar upload -->
     <div class="border-t-2 border-dashed border-gray-200 pt-4 mb-4">
       <p class="text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">Profile picture</p>
-      <form method="post" enctype="multipart/form-data" class="flex items-center gap-2">
+      <form method="post" enctype="multipart/form-data" class="space-y-2">
         <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
         <input type="hidden" name="action" value="avatar">
         <input type="file" name="avatar" accept="image/png,image/jpeg,image/gif,image/webp" required
-               class="block flex-1 text-xs file:mr-2 file:px-3 file:py-1.5 file:border-2 file:border-black file:rounded-full file:bg-white file:font-bold file:text-xs file:cursor-pointer">
-        <button class="bg-[var(--kc-orange)] text-white border-2 border-black rounded-full px-3 py-1.5 text-xs font-extrabold uppercase tracking-wider">Upload</button>
+               class="block w-full text-xs text-gray-700 border-2 border-black rounded-xl
+                      file:mr-3 file:px-3 file:py-2 file:border-0 file:border-r-2 file:border-black
+                      file:rounded-l-[10px] file:bg-[var(--kc-yellow)] file:font-extrabold file:uppercase
+                      file:tracking-wider file:text-[10px] file:cursor-pointer file:text-[var(--kc-dark)]">
+        <button class="btn-orange text-white border-2 border-black rounded-full px-4 py-2 text-xs font-extrabold uppercase tracking-wider w-full shadow-[2px_2px_0_var(--kc-dark)]">Upload picture</button>
       </form>
       {% if u['avatar_url'] %}
-      <form method="post" class="mt-2 inline"
+      <form method="post" class="mt-2"
             data-confirm="Your profile picture will be removed." data-confirm-title="Remove profile picture?" data-confirm-label="Remove">
         <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
         <input type="hidden" name="action" value="avatar_remove">

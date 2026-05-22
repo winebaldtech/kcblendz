@@ -56,10 +56,19 @@
           <button type="submit" class="w-full px-3 py-2 rounded-full border-2 border-black bg-gray-200 text-black text-xs font-extrabold uppercase tracking-wider hover:bg-gray-300">Make customer</button>
         </form>
         {% endif %}
+        <form action="{{ url_for('admin_user_status', uid=u['id']) }}" method="post" class="col-span-2" data-confirm="A new temporary password will be generated and shown — share it with the user securely." data-confirm-title="Reset password?" data-confirm-label="Reset">
+          <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+          <input type="hidden" name="action" value="reset_password">
+          <button type="submit" class="w-full px-3 py-2 rounded-full border-2 border-black bg-[var(--kc-yellow)] text-[var(--kc-dark)] text-xs font-extrabold uppercase tracking-wider hover:bg-yellow-400">Reset password</button>
+        </form>
         <form action="{{ url_for('admin_user_status', uid=u['id']) }}" method="post" class="col-span-2" data-confirm="The user will be hidden but their order history is preserved." data-confirm-title="Soft-delete user?" data-confirm-label="Delete">
           <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
           <input type="hidden" name="action" value="delete">
-          <button type="submit" class="w-full px-3 py-2 rounded-full border-2 border-black bg-rose-500 text-white text-xs font-extrabold uppercase tracking-wider hover:bg-rose-700">Delete account</button>
+          <button type="submit" class="w-full px-3 py-2 rounded-full border-2 border-black bg-rose-500 text-white text-xs font-extrabold uppercase tracking-wider hover:bg-rose-700">Soft-delete account</button>
+        </form>
+        <form action="{{ url_for('admin_user_delete', uid=u['id']) }}" method="post" class="col-span-2" data-confirm="This permanently removes the user. If they have order history, they're soft-deleted instead. This cannot be undone." data-confirm-title="Permanently delete user?" data-confirm-label="Delete forever">
+          <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+          <button type="submit" class="w-full px-3 py-2 rounded-full border-2 border-rose-700 bg-white text-rose-700 text-xs font-extrabold uppercase tracking-wider hover:bg-rose-50">Hard delete</button>
         </form>
       </div>
     </div>

@@ -139,15 +139,18 @@
 
   <!-- Sub-nav: simplified primary links -->
   <nav class="max-w-7xl mx-auto px-4 pb-2 hidden md:flex items-center gap-1">
-    <a href="{{ url_for('shop') }}"     class="px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-full hover:bg-[var(--kc-yellow)] transition shrink-0">Shop</a>
-    <a href="{{ url_for('builder') }}"  class="px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-full hover:bg-[var(--kc-yellow)] transition shrink-0">Builder</a>
+    {% set ep = request.endpoint or '' %}
+    {% set nav_active = 'bg-[var(--kc-yellow)] text-[var(--kc-dark)] shadow-[2px_2px_0_var(--kc-dark)]' %}
+    {% set nav_idle = 'hover:bg-[var(--kc-yellow)]' %}
+    <a href="{{ url_for('shop') }}"     class="px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-full transition shrink-0 {{ nav_active if ep in ['shop','product_detail'] else nav_idle }}">Shop</a>
+    <a href="{{ url_for('builder') }}"  class="px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-full transition shrink-0 {{ nav_active if ep == 'builder' else nav_idle }}">Builder</a>
 
     <!-- Wellness -->
-    <a href="{{ url_for('wellness') }}" class="px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-full hover:bg-[var(--kc-yellow)] transition shrink-0">Wellness</a>
+    <a href="{{ url_for('wellness') }}" class="px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-full transition shrink-0 {{ nav_active if ep in ['wellness','wellness_post'] else nav_idle }}">Wellness</a>
 
-    <a href="{{ url_for('about') }}"    class="px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-full hover:bg-[var(--kc-yellow)] transition shrink-0">Our Story</a>
-    <a href="{{ url_for('subscribe_index') }}" class="px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-full hover:bg-[var(--kc-yellow)] transition shrink-0">Subscribe</a>
-    <a href="{{ url_for('contact') }}"  class="px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-full hover:bg-[var(--kc-yellow)] transition shrink-0">Contact</a>
+    <a href="{{ url_for('about') }}"    class="px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-full transition shrink-0 {{ nav_active if ep == 'about' else nav_idle }}">Our Story</a>
+    <a href="{{ url_for('subscribe_index') }}" class="px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-full transition shrink-0 {{ nav_active if ep in ['subscribe_index','subscribe_plan'] else nav_idle }}">Subscribe</a>
+    <a href="{{ url_for('contact') }}"  class="px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-full transition shrink-0 {{ nav_active if ep == 'contact' else nav_idle }}">Contact</a>
     <a href="{{ url_for('builder') }}" class="ml-auto px-4 py-1.5 text-xs font-extrabold uppercase tracking-wider rounded-full btn-orange border-2 border-[var(--kc-dark)] shrink-0">+ Build Your Blend</a>
   </nav>
 

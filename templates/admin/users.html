@@ -19,16 +19,25 @@
       <option value="MU" {% if region=='MU' %}selected{% endif %}>Mauritius</option>
       <option value="GL" {% if region=='GL' %}selected{% endif %}>Global</option>
     </select>
+    <select name="role" onchange="this.form.submit()" class="input text-sm">
+      <option value="">All roles</option>
+      <option value="customer" {% if role=='customer' %}selected{% endif %}>Customers</option>
+      <option value="admin"    {% if role=='admin' %}selected{% endif %}>Admins</option>
+    </select>
     <select name="status" onchange="this.form.submit()" class="input text-sm">
       <option value="">All statuses</option>
       <option value="active" {% if status=='active' %}selected{% endif %}>Active</option>
       <option value="suspended" {% if status=='suspended' %}selected{% endif %}>Suspended</option>
       <option value="deleted" {% if status=='deleted' %}selected{% endif %}>Deleted</option>
     </select>
-    {% if q or region or status %}
+    {% if q or region or status or role %}
       <a href="{{ url_for('admin_users') }}" class="text-xs font-bold uppercase tracking-wider hover:text-[var(--fuchsia)]">Clear</a>
     {% endif %}
     {{ export_button(url_for('admin_users_export'), 'Export CSV', extra_class='ml-auto') }}
+    <a href="{{ url_for('admin_user_new') }}" class="btn-fuchsia rounded-full px-4 py-2 text-xs font-extrabold uppercase tracking-wider border-2 border-black inline-flex items-center gap-2">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      New user
+    </a>
   </form>
 
   <div class="overflow-x-auto">

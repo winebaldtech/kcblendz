@@ -14,6 +14,25 @@
   <div class="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8">
     <!-- LEFT: payment form -->
     <div>
+      <!-- Payment-method switcher — change without losing cart / order details -->
+      <div class="bg-white border-2 border-[var(--kc-dark)] rounded-2xl p-4 mb-5 shadow-[3px_3px_0_var(--kc-dark)]">
+        <form method="post" action="{{ url_for('payment_change_method', order_id=order.id) }}" class="flex flex-wrap items-center gap-2">
+          <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+          <span class="text-[11px] uppercase tracking-widest font-extrabold text-gray-500 mr-2">Payment method:</span>
+          {% if is_ng %}
+          <button type="submit" name="payment_method" value="card"
+                  class="text-xs font-extrabold uppercase tracking-wider rounded-full px-3 py-1.5 border-2 border-[var(--kc-dark)] {% if order.payment_method == 'card' %}bg-[var(--kc-dark)] text-white{% else %}bg-white hover:bg-[var(--kc-yellow)]{% endif %}">Card (Paystack)</button>
+          {% else %}
+          <button type="submit" name="payment_method" value="card"
+                  class="text-xs font-extrabold uppercase tracking-wider rounded-full px-3 py-1.5 border-2 border-[var(--kc-dark)] {% if order.payment_method == 'card' %}bg-[var(--kc-dark)] text-white{% else %}bg-white hover:bg-[var(--kc-yellow)]{% endif %}">Card</button>
+          <button type="submit" name="payment_method" value="paypal"
+                  class="text-xs font-extrabold uppercase tracking-wider rounded-full px-3 py-1.5 border-2 border-[var(--kc-dark)] {% if order.payment_method == 'paypal' %}bg-[var(--kc-dark)] text-white{% else %}bg-white hover:bg-[var(--kc-yellow)]{% endif %}">PayPal</button>
+          {% endif %}
+          <button type="submit" name="payment_method" value="bank_transfer"
+                  class="text-xs font-extrabold uppercase tracking-wider rounded-full px-3 py-1.5 border-2 border-[var(--kc-dark)] {% if order.payment_method == 'bank_transfer' %}bg-[var(--kc-dark)] text-white{% else %}bg-white hover:bg-[var(--kc-yellow)]{% endif %}">Bank transfer</button>
+        </form>
+      </div>
+
       {% if order.payment_method == 'bank_transfer' %}
         <!-- ───────────── Bank transfer flow ───────────── -->
         <div class="bg-white rounded-2xl border-2 border-[var(--kc-dark)] p-6 shadow-[6px_6px_0_var(--kc-dark)]">

@@ -62,7 +62,7 @@
               <input type="file" name="proof" accept="image/*,.pdf" required class="input w-full">
               <p class="text-xs text-gray-500 mt-2">Max 8MB. Acceptable: bank slip photo, transfer screenshot, mobile banking confirmation.</p>
             </div>
-            <button type="submit" class="btn-green w-full font-extrabold uppercase tracking-wider rounded-full py-3 border-2 border-[var(--kc-dark)] shadow-[4px_4px_0_var(--kc-dark)]">Submit proof &amp; complete order</button>
+            <button type="submit" class="btn-orange w-full font-extrabold uppercase tracking-wider rounded-full py-3 border-2 border-[var(--kc-dark)] shadow-[4px_4px_0_var(--kc-dark)] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_var(--kc-dark)] transition">Submit proof &amp; complete order</button>
           </form>
         </div>
 
@@ -105,7 +105,7 @@
               </div>
             </div>
             <button type="submit"
-                    class="w-full font-extrabold uppercase tracking-wider rounded-full py-3 border-2 border-[var(--kc-dark)] shadow-[4px_4px_0_var(--kc-dark)] bg-[#ffc439] text-[#003087] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_var(--kc-dark)] transition">
+                    class="btn-orange w-full font-extrabold uppercase tracking-wider rounded-full py-3 border-2 border-[var(--kc-dark)] shadow-[4px_4px_0_var(--kc-dark)] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_var(--kc-dark)] transition">
               Authenticate &amp; pay {{ format_money(order.total, order.region) }}
             </button>
           </form>

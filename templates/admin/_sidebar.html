@@ -26,9 +26,13 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11h6m-3-4v8m-7-9 1 13h12l1-13z"/></svg>
       Orders
     </a>
-    <a href="{{ url_for('admin_users') }}" class="admin-link {% if active == 'users' %}active{% endif %}">
+    <a href="{{ url_for('admin_customers') }}" class="admin-link {% if active == 'customers' %}active{% endif %}">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
       Customers
+    </a>
+    <a href="{{ url_for('admin_users') }}" class="admin-link {% if active == 'users' %}active{% endif %}">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Users
     </a>
     <a href="{{ url_for('admin_subscriptions') }}" class="admin-link {% if active == 'subscriptions' %}active{% endif %}">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>

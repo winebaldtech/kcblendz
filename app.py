@@ -2979,37 +2979,72 @@ def admin_dashboard():
     today = datetime.now().date().isoformat()
     month_start = datetime.now().replace(day=1).date().isoformat()
 
-    # ─── FIX: split revenue per-currency so we never sum NGN + MUR + USD as one number.
+    # Revenue stats — paid product orders only, split per region/currency
+    # so we never sum NGN + MUR + USD into a misleading single number.
     revenue_today_rows = db.execute("""SELECT region, currency, COALESCE(SUM(total),0) v
-        FROM orders WHERE payment_status='paid' AND date(created_at)=?
+        FROM orders WHERE payment_status='paid'
+          AND COALESCE(is_subscription,0)=0
+          AND date(created_at)=?
         GROUP BY region""", (today,)).fetchall()
     revenue_month_rows = db.execute("""SELECT region, currency, COALESCE(SUM(total),0) v
-        FROM orders WHERE payment_status='paid' AND date(created_at)>=?
+        FROM orders WHERE payment_status='paid'
+          AND COALESCE(is_subscription,0)=0
+          AND date(created_at)>=?
         GROUP BY region""", (month_start,)).fetchall()
     revenue_today = {r["region"]: r["v"] for r in revenue_today_rows}
     revenue_month = {r["region"]: r["v"] for r in revenue_month_rows}
 
+    # Subscription revenue tracked separately so the dashboard is honest
+    # about where money is coming from.
+    sub_revenue_month_rows = db.execute("""SELECT region, currency, COALESCE(SUM(total),0) v
+        FROM orders WHERE payment_status='paid'
+          AND is_subscription=1 AND date(created_at)>=?
+        GROUP BY region""", (month_start,)).fetchall()
+    sub_revenue_month = {r["region"]: r["v"] for r in sub_revenue_month_rows}
+
     stats = {
-        "revenue_today": revenue_today,        # {region -> amount in that region's currency}
+        "revenue_today": revenue_today,
         "revenue_month": revenue_month,
-        "orders_today":  db.execute("SELECT COUNT(*) v FROM orders WHERE date(created_at)=?", (today,)).fetchone()["v"],
-        "orders_month":  db.execute("SELECT COUNT(*) v FROM orders WHERE date(created_at)>=?", (month_start,)).fetchone()["v"],
-        "customers":     db.execute("SELECT COUNT(*) v FROM users WHERE role='customer' AND status='active'").fetchone()["v"],
+        "sub_revenue_month": sub_revenue_month,
+        # Order counts — paid product orders only, matching what /admin/orders shows
+        "orders_today":  db.execute("""SELECT COUNT(*) v FROM orders
+            WHERE date(created_at)=? AND payment_status='paid'
+              AND COALESCE(is_subscription,0)=0""", (today,)).fetchone()["v"],
+        "orders_month":  db.execute("""SELECT COUNT(*) v FROM orders
+            WHERE date(created_at)>=? AND payment_status='paid'
+              AND COALESCE(is_subscription,0)=0""", (month_start,)).fetchone()["v"],
+        # Customers = registered users with role 'customer' and active status.
+        # Admins are separate and not counted here.
+        "customers":     db.execute("""SELECT COUNT(*) v FROM users
+            WHERE role='customer' AND status='active'""").fetchone()["v"],
+        "active_subs":   db.execute("""SELECT COUNT(*) v FROM subscriptions
+            WHERE status='active'""").fetchone()["v"],
         "products":      db.execute("SELECT COUNT(*) v FROM products WHERE is_active=1").fetchone()["v"],
     }
-    recent_orders = db.execute("SELECT * FROM orders WHERE COALESCE(is_subscription,0)=0 ORDER BY created_at DESC LIMIT 10").fetchall()
+    recent_orders = db.execute("""SELECT * FROM orders
+        WHERE COALESCE(is_subscription,0)=0 AND payment_status='paid'
+        ORDER BY created_at DESC LIMIT 10""").fetchall()
     recent_users = db.execute("SELECT * FROM users WHERE role='customer' ORDER BY created_at DESC LIMIT 5").fetchall()
-    pending_orders = db.execute("SELECT COUNT(*) AS v FROM orders WHERE order_status='pending' AND COALESCE(is_subscription,0)=0").fetchone()["v"]
+    # Pending = paid product orders awaiting fulfilment action
+    pending_orders = db.execute("""SELECT COUNT(*) AS v FROM orders
+        WHERE order_status='pending' AND payment_status='paid'
+          AND COALESCE(is_subscription,0)=0""").fetchone()["v"]
     notifs = db.execute("SELECT * FROM notifications WHERE audience='admin' ORDER BY created_at DESC LIMIT 8").fetchall()
-    # last 7 days revenue by region for chart
+    # Last 7 days revenue by region for chart — paid product orders only.
     last7_ng = db.execute("""SELECT date(created_at) AS d, COALESCE(SUM(total),0) AS v
-        FROM orders WHERE payment_status='paid' AND region='NG' AND date(created_at)>=date('now','-6 days')
+        FROM orders WHERE payment_status='paid'
+          AND COALESCE(is_subscription,0)=0
+          AND region='NG' AND date(created_at)>=date('now','-6 days')
         GROUP BY date(created_at) ORDER BY d""").fetchall()
     last7_mu = db.execute("""SELECT date(created_at) AS d, COALESCE(SUM(total),0) AS v
-        FROM orders WHERE payment_status='paid' AND region='MU' AND date(created_at)>=date('now','-6 days')
+        FROM orders WHERE payment_status='paid'
+          AND COALESCE(is_subscription,0)=0
+          AND region='MU' AND date(created_at)>=date('now','-6 days')
         GROUP BY date(created_at) ORDER BY d""").fetchall()
     last7_gl = db.execute("""SELECT date(created_at) AS d, COALESCE(SUM(total),0) AS v
-        FROM orders WHERE payment_status='paid' AND region='GL' AND date(created_at)>=date('now','-6 days')
+        FROM orders WHERE payment_status='paid'
+          AND COALESCE(is_subscription,0)=0
+          AND region='GL' AND date(created_at)>=date('now','-6 days')
         GROUP BY date(created_at) ORDER BY d""").fetchall()
     return render_template("admin/dashboard.html", stats=stats,
                            recent_orders=recent_orders, recent_users=recent_users,
@@ -3268,9 +3303,71 @@ def admin_order_detail(order_id):
 
 
 # Users
+@app.route("/admin/customers")
+@admin_required
+def admin_customers():
+    """Customers = people who buy. Distinct from /admin/users which is for
+    system account management (admins + customers). Shows lifetime spend,
+    order count, last seen — the things fulfilment and growth actually care about.
+    """
+    q = request.args.get("q", "").strip()
+    region = request.args.get("region", "").strip()
+    status = request.args.get("status", "").strip()
+    db = get_db()
+    sql = """SELECT u.*,
+        (SELECT COUNT(*) FROM orders o WHERE o.user_id=u.id
+            AND o.payment_status='paid'
+            AND COALESCE(o.is_subscription,0)=0) AS orders_count,
+        (SELECT COALESCE(SUM(o.total),0) FROM orders o WHERE o.user_id=u.id
+            AND o.payment_status='paid') AS lifetime_spend,
+        (SELECT MAX(o.created_at) FROM orders o WHERE o.user_id=u.id) AS last_order_at
+        FROM users u WHERE u.role='customer'"""
+    params = []
+    if q: sql += " AND (u.full_name LIKE ? OR u.email LIKE ? OR u.phone LIKE ?)"; params += [f"%{q}%"]*3
+    if region: sql += " AND u.region=?"; params.append(region)
+    if status: sql += " AND u.status=?"; params.append(status)
+    sql += " ORDER BY u.created_at DESC"
+    customers = db.execute(sql, params).fetchall()
+    stats = {
+        "total": db.execute("SELECT COUNT(*) v FROM users WHERE role='customer'").fetchone()["v"],
+        "active": db.execute("SELECT COUNT(*) v FROM users WHERE role='customer' AND status='active'").fetchone()["v"],
+        "with_orders": db.execute("""SELECT COUNT(DISTINCT u.id) v FROM users u
+            JOIN orders o ON o.user_id=u.id WHERE u.role='customer'
+              AND o.payment_status='paid'""").fetchone()["v"],
+    }
+    return render_template("admin/customers.html", customers=customers,
+                           stats=stats, q=q, region=region, status=status)
+
+
+@app.route("/admin/customers/export.csv")
+@admin_required
+def admin_customers_export():
+    rows = get_db().execute("""SELECT u.id, u.full_name, u.email, u.phone,
+        u.region, u.status, u.created_at,
+        (SELECT COUNT(*) FROM orders o WHERE o.user_id=u.id
+            AND o.payment_status='paid'
+            AND COALESCE(o.is_subscription,0)=0) AS orders_count,
+        (SELECT COALESCE(SUM(o.total),0) FROM orders o WHERE o.user_id=u.id
+            AND o.payment_status='paid') AS lifetime_spend
+        FROM users u WHERE u.role='customer'
+        ORDER BY u.created_at DESC""").fetchall()
+    return _csv_response(
+        "kcblendz-customers.csv",
+        ["id", "full_name", "email", "phone", "region", "status",
+         "created_at", "paid_orders", "lifetime_spend"],
+        [[r["id"], r["full_name"] or "", r["email"], r["phone"] or "",
+          r["region"] or "", r["status"], r["created_at"],
+          r["orders_count"], f"{r['lifetime_spend']:.2f}"] for r in rows],
+    )
+
+
 @app.route("/admin/users")
 @admin_required
 def admin_users():
+    """All accounts on the system — customers and admins together. Used for
+    system-level user management (create accounts, suspend, change role).
+    For the customer-only view aimed at growth & support, see /admin/customers.
+    """
     q = request.args.get("q", "").strip()
     region = request.args.get("region", "").strip()
     status = request.args.get("status", "").strip()

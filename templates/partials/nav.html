@@ -9,11 +9,11 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--kc-yellow)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 3h5v5"/><path d="M21 3l-7 7"/><path d="M8 21H3v-5"/><path d="M3 21l7-7"/></svg>
         FREE LOCAL DELIVERY ON ORDERS OVER {{ format_money(15000 if region == 'NG' else (500 if region == 'MU' else 50), region or 'MU') }}
       </p>
-      <div class="hidden md:flex items-center gap-4 text-[11px] uppercase tracking-widest">
+      <!-- <div class="hidden md:flex items-center gap-4 text-[11px] uppercase tracking-widest">
         <a href="{{ url_for('about') }}" class="hover:text-[var(--kc-yellow)] transition">Our Story</a>
         <a href="{{ url_for('subscribe_index') }}" class="hover:text-[var(--kc-yellow)] transition">Subscribe & save</a>
         <a href="{{ url_for('track_order') }}" class="hover:text-[var(--kc-yellow)] transition">Track Order</a>
-      </div>
+      </div> -->
     </div>
   </div>
 
@@ -137,16 +137,16 @@
     </a>
     <a href="{{ url_for('wellness') }}"
        class="nav-link {% if ep in ('wellness','wellness_post') %}is-active{% endif %}">Wellness</a>
-    <a href="{{ url_for('subscribe_index') }}"
-       class="nav-link {% if ep and ep.startswith('subscribe') %}is-active{% endif %}">Subscribe</a>
+    <!-- <a href="{{ url_for('subscribe_index') }}"
+       class="nav-link {% if ep and ep.startswith('subscribe') %}is-active{% endif %}">Subscribe</a> -->
     <a href="{{ url_for('about') }}"
        class="nav-link {% if ep == 'about' %}is-active{% endif %}">Our Story</a>
     <a href="{{ url_for('contact') }}"
        class="nav-link {% if ep == 'contact' %}is-active{% endif %}">Contact</a>
-    <a href="{{ url_for('careers') }}"
+    <!-- <a href="{{ url_for('careers') }}"
        class="nav-link {% if ep and ep.startswith('careers') %}is-active{% endif %}">Careers</a>
     <a href="{{ url_for('track_order') }}"
-       class="nav-link {% if ep == 'track_order' %}is-active{% endif %}">Track Order</a>
+       class="nav-link {% if ep == 'track_order' %}is-active{% endif %}">Track Order</a> -->
   </nav>
 
   <!-- Mobile menu -->
@@ -166,16 +166,16 @@
          class="m-nav-link m-nav-link--accent {% if ep == 'builder' %}is-active{% endif %}">Build Blend</a>
       <a href="{{ url_for('wellness') }}"
          class="m-nav-link {% if ep in ('wellness','wellness_post') %}is-active{% endif %}">Wellness Hub</a>
-      <a href="{{ url_for('subscribe_index') }}"
-         class="m-nav-link {% if ep and ep.startswith('subscribe') %}is-active{% endif %}">Subscribe</a>
+      <!-- <a href="{{ url_for('subscribe_index') }}"
+         class="m-nav-link {% if ep and ep.startswith('subscribe') %}is-active{% endif %}">Subscribe</a> -->
       <a href="{{ url_for('about') }}"
          class="m-nav-link {% if ep == 'about' %}is-active{% endif %}">Our Story</a>
       <a href="{{ url_for('contact') }}"
          class="m-nav-link {% if ep == 'contact' %}is-active{% endif %}">Contact</a>
-      <a href="{{ url_for('careers') }}"
-         class="m-nav-link {% if ep and ep.startswith('careers') %}is-active{% endif %}">Careers</a>
-      <a href="{{ url_for('track_order') }}"
-         class="m-nav-link {% if ep == 'track_order' %}is-active{% endif %}">Track Order</a>
+      <!-- <a href="{{ url_for('careers') }}"
+         class="m-nav-link {% if ep and ep.startswith('careers') %}is-active{% endif %}">Careers</a> -->
+      <!-- <a href="{{ url_for('track_order') }}"
+         class="m-nav-link {% if ep == 'track_order' %}is-active{% endif %}">Track Order</a> -->
       {% if not user %}
         <a href="{{ url_for('login') }}"    class="m-nav-link">Sign in</a>
         <a href="{{ url_for('register') }}" class="m-nav-link btn-orange">Sign up</a>

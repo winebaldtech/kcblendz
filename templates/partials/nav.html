@@ -124,17 +124,29 @@
     </div>
   </div>
 
-  {# ─── Simplified primary nav: Shop · Builder · Wellness(dropdown) · Our Story · Contact ─── #}
+  {# ─── Simplified primary nav: Shop · Builder · Wellness · Our Story · Contact · Track ─── #}
+  {# Active highlight uses request.endpoint so the current page is always obvious. #}
+  {% set ep = request.endpoint or '' %}
   <nav class="max-w-7xl mx-auto px-4 pb-2 hidden md:flex items-center gap-1 overflow-x-auto scroll-x">
-    <a href="{{ url_for('shop') }}"    class="px-4 py-1.5 text-xs font-extrabold uppercase tracking-wider rounded-full hover:bg-[var(--kc-yellow)] transition shrink-0">Shop</a>
-    <a href="{{ url_for('builder') }}" class="px-4 py-1.5 text-xs font-extrabold uppercase tracking-wider rounded-full bg-[var(--kc-yellow)] hover:bg-[var(--kc-yellow)]/80 transition shrink-0 inline-flex items-center gap-1">
+    <a href="{{ url_for('shop') }}"
+       class="nav-link {% if ep in ('shop','product_detail') %}is-active{% endif %}">Shop</a>
+    <a href="{{ url_for('builder') }}"
+       class="nav-link nav-link--accent {% if ep == 'builder' %}is-active{% endif %}">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       Build Your Blend
     </a>
-    <a href="{{ url_for('wellness') }}" class="px-4 py-1.5 text-xs font-extrabold uppercase tracking-wider rounded-full hover:bg-[var(--kc-yellow)] transition shrink-0">Wellness</a>
-    <a href="{{ url_for('about') }}"   class="px-4 py-1.5 text-xs font-extrabold uppercase tracking-wider rounded-full hover:bg-[var(--kc-yellow)] transition shrink-0">Our Story</a>
-    <a href="{{ url_for('contact') }}" class="px-4 py-1.5 text-xs font-extrabold uppercase tracking-wider rounded-full hover:bg-[var(--kc-yellow)] transition shrink-0">Contact</a>
-    <a href="{{ url_for('track_order') }}" class="px-4 py-1.5 text-xs font-extrabold uppercase tracking-wider rounded-full hover:bg-[var(--kc-yellow)] transition shrink-0">Track Order</a>
+    <a href="{{ url_for('wellness') }}"
+       class="nav-link {% if ep in ('wellness','wellness_post') %}is-active{% endif %}">Wellness</a>
+    <a href="{{ url_for('subscribe_index') }}"
+       class="nav-link {% if ep and ep.startswith('subscribe') %}is-active{% endif %}">Subscribe</a>
+    <a href="{{ url_for('about') }}"
+       class="nav-link {% if ep == 'about' %}is-active{% endif %}">Our Story</a>
+    <a href="{{ url_for('contact') }}"
+       class="nav-link {% if ep == 'contact' %}is-active{% endif %}">Contact</a>
+    <a href="{{ url_for('careers') }}"
+       class="nav-link {% if ep and ep.startswith('careers') %}is-active{% endif %}">Careers</a>
+    <a href="{{ url_for('track_order') }}"
+       class="nav-link {% if ep == 'track_order' %}is-active{% endif %}">Track Order</a>
   </nav>
 
   <!-- Mobile menu -->
@@ -148,16 +160,25 @@
       </div>
     </form>
     <nav class="p-2 grid grid-cols-2 gap-1">
-      <a href="{{ url_for('shop') }}"     class="px-3 py-2 text-sm font-bold rounded-lg hover:bg-[var(--kc-yellow)]">Shop</a>
-      <a href="{{ url_for('builder') }}"  class="px-3 py-2 text-sm font-bold rounded-lg bg-[var(--kc-yellow)]/40 hover:bg-[var(--kc-yellow)]">Build Blend</a>
-      <a href="{{ url_for('wellness') }}" class="px-3 py-2 text-sm font-bold rounded-lg hover:bg-[var(--kc-yellow)]">Wellness Hub</a>
-      <a href="{{ url_for('subscribe_index') }}" class="px-3 py-2 text-sm font-bold rounded-lg hover:bg-[var(--kc-yellow)]">Subscribe</a>
-      <a href="{{ url_for('about') }}"    class="px-3 py-2 text-sm font-bold rounded-lg hover:bg-[var(--kc-yellow)]">Our Story</a>
-      <a href="{{ url_for('contact') }}"  class="px-3 py-2 text-sm font-bold rounded-lg hover:bg-[var(--kc-yellow)]">Contact</a>
-      <a href="{{ url_for('track_order') }}" class="px-3 py-2 text-sm font-bold rounded-lg hover:bg-[var(--kc-yellow)]">Track Order</a>
+      <a href="{{ url_for('shop') }}"
+         class="m-nav-link {% if ep in ('shop','product_detail') %}is-active{% endif %}">Shop</a>
+      <a href="{{ url_for('builder') }}"
+         class="m-nav-link m-nav-link--accent {% if ep == 'builder' %}is-active{% endif %}">Build Blend</a>
+      <a href="{{ url_for('wellness') }}"
+         class="m-nav-link {% if ep in ('wellness','wellness_post') %}is-active{% endif %}">Wellness Hub</a>
+      <a href="{{ url_for('subscribe_index') }}"
+         class="m-nav-link {% if ep and ep.startswith('subscribe') %}is-active{% endif %}">Subscribe</a>
+      <a href="{{ url_for('about') }}"
+         class="m-nav-link {% if ep == 'about' %}is-active{% endif %}">Our Story</a>
+      <a href="{{ url_for('contact') }}"
+         class="m-nav-link {% if ep == 'contact' %}is-active{% endif %}">Contact</a>
+      <a href="{{ url_for('careers') }}"
+         class="m-nav-link {% if ep and ep.startswith('careers') %}is-active{% endif %}">Careers</a>
+      <a href="{{ url_for('track_order') }}"
+         class="m-nav-link {% if ep == 'track_order' %}is-active{% endif %}">Track Order</a>
       {% if not user %}
-        <a href="{{ url_for('login') }}"    class="px-3 py-2 text-sm font-bold rounded-lg hover:bg-[var(--kc-yellow)]">Sign in</a>
-        <a href="{{ url_for('register') }}" class="px-3 py-2 text-sm font-bold rounded-lg btn-orange">Sign up</a>
+        <a href="{{ url_for('login') }}"    class="m-nav-link">Sign in</a>
+        <a href="{{ url_for('register') }}" class="m-nav-link btn-orange">Sign up</a>
       {% endif %}
     </nav>
     {% if region %}

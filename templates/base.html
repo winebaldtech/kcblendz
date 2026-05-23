@@ -165,6 +165,49 @@
   .admin-link:hover { background: rgba(247,148,29,0.15); color:#fff; }
   .admin-link.active { background: var(--kc-orange); color:#fff; }
 
+  /* ─── Primary nav links (desktop + mobile) ─────────────────────────────────
+     Unified hover + active state so the user always knows which page they're
+     on. .is-active gets the same styling as :hover so the affordance is
+     reinforced (active page LOOKS hovered — confirms "you are here"). */
+  .nav-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 16px;
+    font-size: 12px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: .08em;
+    border-radius: 9999px;
+    color: var(--kc-dark);
+    background: transparent;
+    border: 2px solid transparent;
+    transition: background .15s, color .15s, border-color .15s, transform .15s;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .nav-link:hover { background: var(--kc-yellow); color: var(--kc-dark); }
+  .nav-link.is-active {
+    background: var(--kc-green);
+    color: #fff;
+    border-color: var(--kc-dark);
+    box-shadow: 2px 2px 0 var(--kc-dark);
+  }
+  .nav-link.is-active:hover { background: var(--kc-green-deep); }
+  /* The Build-Your-Blend pill is a CTA — yellow at rest, green when on it */
+  .nav-link--accent { background: var(--kc-yellow); }
+  .nav-link--accent:hover { background: var(--kc-orange); color: #fff; }
+
+  .m-nav-link {
+    display: block;
+    padding: 10px 12px;
+    font-size: 14px; font-weight: 700;
+    border-radius: 10px;
+    color: var(--kc-dark);
+    transition: background .15s, color .15s;
+  }
+  .m-nav-link:hover { background: var(--kc-yellow); }
+  .m-nav-link.is-active {
+    background: var(--kc-green); color: #fff;
+  }
+  .m-nav-link--accent { background: rgba(251,192,45,0.4); }
+
   /* Star rating */
   .star { color: var(--kc-yellow); }
   .star.empty { color: #d4d6d0; }
@@ -291,9 +334,11 @@
   cancelBt.addEventListener('click', closeConfirm);
   dlg.addEventListener('click', function(e){ if (e.target === dlg) closeConfirm(); });
 
-  // ─── Region switcher — POSTs the new region without leaving the current page,
+  // ─── Region switcher — POSTs the new region, re-prices the cart in-place,
   // then reloads the same URL so prices/inventory refresh under the new locale.
-  // Warns first if items are in the cart.
+  // The cart is NEVER wiped on a region switch — items get re-priced in the new
+  // currency, and only items not sold in the new region are dropped (server
+  // flashes a message about that).
   function switchRegion(region){
     fetch('/api/region/' + region, {
       method: 'POST',
@@ -301,11 +346,16 @@
       credentials: 'same-origin'
     }).then(function(r){ return r.json(); }).then(function(j){
       if (j.ok){
-        // Stash a toast for after reload so the user sees the confirmation.
-        try { sessionStorage.setItem('kcb_toast',
-          j.cart_cleared
-            ? 'Region switched. Cart cleared (prices change between stores).'
-            : 'Region switched to ' + region + '.');
+        try {
+          var msg;
+          if (j.cart_dropped > 0) {
+            msg = 'Region switched. ' + j.cart_dropped + ' item(s) not sold here were removed; the rest were re-priced.';
+          } else if (j.cart_repriced && j.cart_kept > 0) {
+            msg = 'Region switched to ' + region + '. Cart prices updated.';
+          } else {
+            msg = 'Region switched to ' + region + '.';
+          }
+          sessionStorage.setItem('kcb_toast', msg);
         } catch(e){}
         window.location.reload();
       }
@@ -315,20 +365,9 @@
     el.addEventListener('click', function(e){
       e.preventDefault();
       var r = el.getAttribute('data-region-switch');
-      // If cart has items and region is changing, ask first.
-      var hasItems = document.querySelector('[data-cart-count]') &&
-                     parseInt(document.querySelector('[data-cart-count]').textContent || '0', 10) > 0;
-      var current  = el.getAttribute('data-region-current');
-      if (hasItems && current && current !== r){
-        titleEl.textContent = 'Switch region?';
-        msgEl.textContent   = 'Your cart will be cleared because prices and stock change between stores.';
-        okBtn.textContent   = 'Switch & clear cart';
-        pendingForm = null;
-        okBtn.onclick = function(){ closeConfirm(); switchRegion(r); okBtn.onclick = null; };
-        if (typeof dlg.showModal === 'function') dlg.showModal();
-      } else {
-        switchRegion(r);
-      }
+      var current = el.getAttribute('data-region-current');
+      if (current === r) return;  // no-op
+      switchRegion(r);
     });
   });
 

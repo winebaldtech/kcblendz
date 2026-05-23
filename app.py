@@ -440,6 +440,23 @@ CREATE TABLE IF NOT EXISTS team_members (
     is_active INTEGER NOT NULL DEFAULT 1
 );
 
+-- ─── Persistent cart (DB-backed) ────────────────────────────────────────────
+-- One row per cart owner — either a logged-in user (user_id) or a guest
+-- (cart_token from session). items_json stores the array of cart line-items.
+-- This is what lets carts survive page refreshes, payment cancellations,
+-- payment-method changes, browser closes, and even cross-device login.
+CREATE TABLE IF NOT EXISTS user_carts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+    cart_token TEXT UNIQUE,
+    region TEXT,
+    items_json TEXT NOT NULL DEFAULT '[]',
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    CHECK (user_id IS NOT NULL OR cart_token IS NOT NULL)
+);
+CREATE INDEX IF NOT EXISTS idx_user_carts_token ON user_carts(cart_token);
+CREATE INDEX IF NOT EXISTS idx_user_carts_user  ON user_carts(user_id);
+
 CREATE INDEX IF NOT EXISTS idx_favorites_user ON favorites(user_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_product ON reviews(product_id);
 CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id);
@@ -1402,8 +1419,11 @@ def get_active_nav_categories():
 
 
 def admin_unread_counts():
-    """Two cheap COUNT(*) queries used by the admin top-bar polling endpoint
-    and the initial page render. Returns dict with notification + message counts."""
+    """Cheap COUNT(*) queries used by the admin top-bar polling endpoint and
+    the initial page render. ALL counts here MUST match the filters used on
+    the page they link to, so the badge number always equals what the admin
+    actually sees after clicking through (no "5 pending" → "3 visible" mismatch).
+    """
     db = get_db()
     u = current_user()
     if not u:
@@ -1413,8 +1433,10 @@ def admin_unread_counts():
             WHERE audience='admin' AND user_id=? AND is_read=0""", (u["id"],)).fetchone()["c"],
         "messages": db.execute("""SELECT COUNT(*) c FROM contact_messages
             WHERE is_handled=0""").fetchone()["c"],
+        # /admin/orders defaults to kind=product — match that exact filter so the
+        # badge number == the number of rows the admin will see after clicking it.
         "orders_pending": db.execute("""SELECT COUNT(*) c FROM orders
-            WHERE order_status='pending'""").fetchone()["c"],
+            WHERE order_status='pending' AND COALESCE(kind,'product')='product'""").fetchone()["c"],
     }
 
 
@@ -1759,10 +1781,85 @@ if os.environ.get("KCB_SCHEDULER") == "1":
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# CART — server-side cart kept in session
+# CART — DB-backed, persists across refreshes, payment retries, region switches
 # ─────────────────────────────────────────────────────────────────────────────
+# Design:
+#   • Logged-in users  → one row in user_carts keyed by user_id
+#   • Guests           → one row keyed by a random cart_token stored in session
+#   • On login         → guest cart is merged into the user's cart (if any)
+#   • On logout        → only the SESSION key is cleared; the DB cart stays
+#   • On region switch → items are RE-PRICED (not wiped). Items not sold in
+#                        the new region are dropped with a flash message.
+#   • Within a request → g.cart caches the DB read so we don't query twice.
+
+def _cart_db_key():
+    """Returns (column_name, value) identifying who owns the current cart.
+    For logged-in users it's ('user_id', uid); for guests we mint a random
+    token and stash it in the session so it survives across requests."""
+    u = current_user()
+    if u:
+        return ("user_id", u["id"])
+    if "_cart_token" not in session:
+        session["_cart_token"] = secrets.token_urlsafe(16)
+        session.modified = True
+    return ("cart_token", session["_cart_token"])
+
+
+def _load_cart_row():
+    """Read the user_carts row for the current owner. Returns None if there
+    isn't one yet (caller treats this as an empty cart)."""
+    col, val = _cart_db_key()
+    return get_db().execute(
+        f"SELECT * FROM user_carts WHERE {col}=?", (val,)
+    ).fetchone()
+
+
 def get_cart():
-    return session.setdefault("cart", {"items": [], "region": None})
+    """Returns the current cart as a dict {items: [...], region: 'NG'|...}.
+    Cached on `g` so repeated calls inside one request are free."""
+    if "cart" in g:
+        return g.cart
+    row = _load_cart_row()
+    if not row:
+        g.cart = {"items": [], "region": current_region()}
+        return g.cart
+    try:
+        items = json.loads(row["items_json"] or "[]")
+        if not isinstance(items, list):
+            items = []
+    except (TypeError, ValueError):
+        items = []
+    g.cart = {"items": items, "region": row["region"] or current_region()}
+    return g.cart
+
+
+def persist_cart():
+    """Write the in-memory cart back to the DB. Call after every mutation
+    (add / update / remove / merge / region-reprice). UPSERT-style insert."""
+    cart = g.get("cart")
+    if cart is None:
+        return
+    col, val = _cart_db_key()
+    items_json = json.dumps(cart.get("items", []))
+    region = cart.get("region") or current_region()
+    db = get_db()
+    # Try update first — UPSERT keeps us on stdlib SQLite (no ON CONFLICT magic needed).
+    cur = db.execute(
+        f"UPDATE user_carts SET items_json=?, region=?, updated_at=datetime('now') WHERE {col}=?",
+        (items_json, region, val),
+    )
+    if cur.rowcount == 0:
+        if col == "user_id":
+            db.execute(
+                "INSERT INTO user_carts (user_id, region, items_json) VALUES (?,?,?)",
+                (val, region, items_json),
+            )
+        else:
+            db.execute(
+                "INSERT INTO user_carts (cart_token, region, items_json) VALUES (?,?,?)",
+                (val, region, items_json),
+            )
+    db.commit()
 
 
 def cart_count():
@@ -1773,13 +1870,180 @@ def cart_subtotal():
     return sum(float(i["unit_price"]) * int(i["quantity"]) for i in get_cart().get("items", []))
 
 
-def cart_clear_if_region_change():
+def cart_reprice_on_region_change():
+    """Region just changed — DON'T wipe the cart. Re-price every item in the
+    new region's currency, drop anything that isn't sold there, and tell the
+    customer what happened. This is what the user asked for: switching
+    regions should preserve the cart, not nuke it.
+    """
     cart = get_cart()
-    if cart["region"] != current_region():
-        # store-specific cart per requirement — flush on region switch
-        cart["items"] = []
-        cart["region"] = current_region()
-        session.modified = True
+    new_region = current_region()
+    if not new_region or cart.get("region") == new_region:
+        return
+    if not cart.get("items"):
+        cart["region"] = new_region
+        persist_cart()
+        return
+
+    db = get_db()
+    price_col = price_field_for(new_region)
+    avail_col = availability_field_for(new_region)
+
+    kept, dropped = [], []
+    for item in cart["items"]:
+        kind = item.get("kind", "product")
+        if kind == "product":
+            pid = item.get("product_id")
+            if not pid:
+                continue
+            p = db.execute(
+                f"SELECT name, {price_col} AS price, {avail_col} AS available "
+                f"FROM products WHERE id=? AND is_active=1",
+                (pid,),
+            ).fetchone()
+            if p and p["available"] and (p["price"] or 0) > 0:
+                new_item = dict(item)
+                new_item["unit_price"] = p["price"]
+                kept.append(new_item)
+            else:
+                dropped.append(item.get("name", "Item"))
+        elif kind == "custom":
+            # Re-price a custom blend from its saved config_json.
+            sid = item.get("custom_smoothie_id")
+            new_price = None
+            if sid:
+                s = db.execute("SELECT * FROM custom_smoothies WHERE id=?", (sid,)).fetchone()
+                if s:
+                    try:
+                        cfg = json.loads(s["config_json"])
+                        ids = []
+                        for k in ("cup_size", "fruits", "base", "sweeteners", "addons", "boosters"):
+                            v = cfg.get(k)
+                            if isinstance(v, list): ids.extend(v)
+                            elif v: ids.append(v)
+                        if ids:
+                            placeholders = ",".join("?" for _ in ids)
+                            rows = db.execute(
+                                f"SELECT {price_col} AS price FROM builder_options WHERE id IN ({placeholders})",
+                                ids,
+                            ).fetchall()
+                            total = sum(r["price"] or 0 for r in rows)
+                            if total > 0:
+                                new_price = total
+                    except Exception:
+                        pass
+            if new_price:
+                new_item = dict(item)
+                new_item["unit_price"] = new_price
+                kept.append(new_item)
+            else:
+                dropped.append(item.get("name", "Custom blend"))
+        else:
+            # Unknown kind — keep it but don't reprice.
+            kept.append(dict(item))
+
+    cart["items"] = kept
+    cart["region"] = new_region
+    persist_cart()
+
+    if dropped:
+        names = ", ".join(dropped[:3]) + ("…" if len(dropped) > 3 else "")
+        flash(
+            f"Cart updated for your new store. {len(dropped)} item(s) not sold here were removed: {names}",
+            "info",
+        )
+    elif kept:
+        flash("Cart prices updated for your new store.", "info")
+
+
+def merge_guest_cart_into_user():
+    """Called right after a successful login. If the user had been shopping
+    as a guest, fold those items into their persistent user cart so they
+    don't lose what they were buying when they sign in."""
+    token = session.get("_cart_token")
+    u = current_user()
+    if not u or not token:
+        return
+    db = get_db()
+    guest_row = db.execute("SELECT * FROM user_carts WHERE cart_token=?", (token,)).fetchone()
+    if not guest_row:
+        session.pop("_cart_token", None)
+        return
+    try:
+        guest_items = json.loads(guest_row["items_json"] or "[]")
+        if not isinstance(guest_items, list): guest_items = []
+    except (TypeError, ValueError):
+        guest_items = []
+
+    user_row = db.execute("SELECT * FROM user_carts WHERE user_id=?", (u["id"],)).fetchone()
+    if user_row:
+        try:
+            user_items = json.loads(user_row["items_json"] or "[]")
+            if not isinstance(user_items, list): user_items = []
+        except (TypeError, ValueError):
+            user_items = []
+    else:
+        user_items = []
+
+    if not guest_items and not user_items:
+        # Both empty — just clean up.
+        db.execute("DELETE FROM user_carts WHERE cart_token=?", (token,))
+        db.commit()
+        session.pop("_cart_token", None)
+        return
+
+    # Merge — for products, sum quantities; for customs, just append.
+    def _key(it):
+        if it.get("kind") == "product":
+            return ("product", it.get("product_id"))
+        return ("custom", it.get("custom_smoothie_id") or json.dumps(it.get("meta", "")))
+
+    merged = {}
+    for it in user_items:
+        merged[_key(it)] = dict(it)
+    for it in guest_items:
+        k = _key(it)
+        if k in merged and k[0] == "product":
+            merged[k]["quantity"] = int(merged[k].get("quantity", 0)) + int(it.get("quantity", 0))
+        else:
+            merged[k] = dict(it)
+
+    region = (user_row["region"] if user_row else None) or guest_row["region"] or current_region()
+    items_json = json.dumps(list(merged.values()))
+
+    if user_row:
+        db.execute(
+            "UPDATE user_carts SET items_json=?, region=?, updated_at=datetime('now') WHERE user_id=?",
+            (items_json, region, u["id"]),
+        )
+    else:
+        db.execute(
+            "INSERT INTO user_carts (user_id, region, items_json) VALUES (?,?,?)",
+            (u["id"], region, items_json),
+        )
+    db.execute("DELETE FROM user_carts WHERE cart_token=?", (token,))
+    db.commit()
+    session.pop("_cart_token", None)
+    g.pop("cart", None)  # force reload from DB
+
+
+def safe_session_clear(*, drop_cart_token=False):
+    """Wipe session contents but preserve the keys that should outlive an
+    auth change. By default we keep:
+      • _csrf       — so any form already rendered in another tab still validates
+                      after the user logs in/out (was the cause of "Invalid CSRF token")
+      • region      — so the user doesn't have to re-pick their store
+      • _cart_token — so guest carts survive login (the merge helper consumes it)
+    Logout passes drop_cart_token=True since the next visitor on this device
+    shouldn't inherit the previous user's basket.
+    """
+    keep_keys = ("_csrf", "region")
+    if not drop_cart_token:
+        keep_keys = keep_keys + ("_cart_token",)
+    preserved = {k: session[k] for k in keep_keys if k in session}
+    session.clear()
+    session.update(preserved)
+    session.permanent = True
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1822,7 +2086,7 @@ def store_set(region):
         abort(404)
     session["region"] = region
     session.modified = True
-    cart_clear_if_region_change()
+    cart_reprice_on_region_change()
     nxt = request.form.get("next") or url_for("home")
     return redirect(nxt)
 
@@ -1830,7 +2094,7 @@ def store_set(region):
 @app.route("/home")
 @region_required
 def home():
-    cart_clear_if_region_change()
+    cart_reprice_on_region_change()
     db = get_db()
     region = current_region()
     avail = availability_field_for(region)
@@ -2048,7 +2312,7 @@ def builder_add_to_cart():
         "quantity": qty,
         "custom_smoothie_id": smoothie_id,
     })
-    session.modified = True
+    persist_cart()
     flash("Custom smoothie added to cart.", "success")
     return redirect(url_for("cart"))
 
@@ -2076,7 +2340,7 @@ def cart_add():
     for item in cart["items"]:
         if item.get("kind") == "product" and item.get("product_id") == p["id"]:
             item["quantity"] = int(item["quantity"]) + qty
-            session.modified = True
+            persist_cart()
             flash(f"Added another {p['name']} to your cart.", "success")
             return redirect(request.referrer or url_for("cart"))
     cart["items"].append({
@@ -2088,7 +2352,7 @@ def cart_add():
         "unit_price": p[price_col],
         "quantity": qty,
     })
-    session.modified = True
+    persist_cart()
     flash(f"{p['name']} added to cart.", "success")
     return redirect(request.referrer or url_for("cart"))
 
@@ -2096,7 +2360,7 @@ def cart_add():
 @app.route("/cart")
 @region_required
 def cart():
-    cart_clear_if_region_change()
+    cart_reprice_on_region_change()
     return render_template("public/cart.html", cart=get_cart(),
                            subtotal=cart_subtotal())
 
@@ -2112,7 +2376,7 @@ def cart_update():
             cart["items"].pop(idx)
         else:
             cart["items"][idx]["quantity"] = qty
-        session.modified = True
+        persist_cart()
     return redirect(url_for("cart"))
 
 
@@ -2123,7 +2387,7 @@ def cart_remove():
     cart = get_cart()
     if 0 <= idx < len(cart["items"]):
         cart["items"].pop(idx)
-        session.modified = True
+        persist_cart()
     return redirect(url_for("cart"))
 
 
@@ -2153,7 +2417,7 @@ def delivery_fee_for(region, city=None, subtotal=0.0):
 @app.route("/checkout", methods=["GET", "POST"])
 @region_required
 def checkout():
-    cart_clear_if_region_change()
+    cart_reprice_on_region_change()
     cart = get_cart()
     if not cart["items"]:
         flash("Your cart is empty.", "info")
@@ -2184,7 +2448,7 @@ def checkout():
         if not valid_phone(phone): errors.append("Valid WhatsApp / phone number is required.")
         if fulfillment == "delivery" and (not address or not city):
             errors.append("Delivery address and city are required.")
-        if payment_method not in ("card", "paypal", "bank_transfer"):
+        if payment_method not in ("card", "paystack", "paypal", "bank_transfer"):
             errors.append("Choose a valid payment method.")
         if errors:
             for e in errors:
@@ -2250,8 +2514,11 @@ def checkout():
 
         record_order_event(order_id, "pending", note="Order placed", actor="customer")
 
-        # Clear cart
-        session["cart"] = {"items": [], "region": region}
+        # Empty the DB-backed cart (cart persists across the payment flow if the
+        # user backs out — only fully cleared once the order is on file).
+        cart["items"] = []
+        cart["region"] = region
+        persist_cart()
         notify_admins(f"New order {order_number}", f"{full_name} placed an order totalling {format_money(total, region)}.",
                       url_for("admin_order_detail", order_id=order_id))
         if u:
@@ -2520,6 +2787,142 @@ def order_thanks(order_id):
     return render_template("public/order_thanks.html", order=order, items=items)
 
 
+# ─── Allow the customer to switch payment method without losing the order ─────
+# Fixes the "I picked card but want to use PayPal now" friction. Only works
+# while the order is still unpaid — once it's paid we're done.
+@app.route("/payment/<int:order_id>/method", methods=["POST"])
+def payment_method_change(order_id):
+    db = get_db()
+    order = db.execute("SELECT * FROM orders WHERE id=?", (order_id,)).fetchone()
+    if not order:
+        abort(404)
+    u = current_user()
+    if order["user_id"] and (not u or u["id"] != order["user_id"]):
+        if not u or u["role"] != "admin":
+            abort(403)
+    if order["payment_status"] == "paid":
+        flash("This order is already paid.", "info")
+        return redirect(url_for("payment", order_id=order_id))
+    new_method = request.form.get("payment_method", "").strip()
+    if new_method not in ("card", "paystack", "paypal", "bank_transfer"):
+        flash("Please choose a valid payment method.", "error")
+        return redirect(url_for("payment", order_id=order_id))
+    if new_method == "paystack" and order["region"] != "NG":
+        flash("Paystack is only available for Nigeria orders.", "error")
+        return redirect(url_for("payment", order_id=order_id))
+    db.execute("UPDATE orders SET payment_method=?, updated_at=datetime('now') WHERE id=?",
+               (new_method, order_id))
+    db.commit()
+    audit("order.payment_method_change", "order", order_id, {"new_method": new_method})
+    flash("Payment method updated. Complete payment when you're ready.", "info")
+    return redirect(url_for("payment", order_id=order_id))
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CAREERS — public job board + applications (reuses contact_messages table)
+# ─────────────────────────────────────────────────────────────────────────────
+CAREERS_OPEN_ROLES = [
+    {
+        "slug": "smoothie-artist",
+        "title": "Smoothie Artist (Kitchen Crew)",
+        "location": "Pamplemousses, Mauritius · On-site",
+        "type": "Full-time",
+        "summary": "Blend our signature drinks fresh every morning. The first hands on every cup that leaves the kitchen.",
+        "responsibilities": [
+            "Prepare smoothies, juices, bowls and shots from our menu and custom orders",
+            "Maintain kitchen hygiene and food-safety standards",
+            "Manage daily fruit prep and stock rotation",
+            "Take direction from the head chef and shift lead",
+        ],
+        "requirements": [
+            "Food-handler certificate (or willingness to obtain one)",
+            "Friendly, fast, and detail-oriented",
+            "Available weekends and early mornings",
+        ],
+    },
+    {
+        "slug": "delivery-rider",
+        "title": "Delivery Rider",
+        "location": "Lagos, Nigeria · Field",
+        "type": "Full-time",
+        "summary": "Get fresh cups to customers in under 45 minutes. Reliability matters more than speed.",
+        "responsibilities": [
+            "Run delivery routes from the Lagos kitchen",
+            "Handle cash and POS collections at the door",
+            "Keep the customer informed when delays happen",
+        ],
+        "requirements": [
+            "Valid rider's permit and own bike (we pay fuel + maintenance allowance)",
+            "Knowledge of Lagos Island and Mainland routes",
+            "Smartphone with WhatsApp",
+        ],
+    },
+    {
+        "slug": "social-media-coordinator",
+        "title": "Social Media Coordinator",
+        "location": "Remote (MU / NG) · Part-time",
+        "type": "Part-time",
+        "summary": "Run our Instagram, TikTok and WhatsApp Business channels. Shoot daily, post daily, engage daily.",
+        "responsibilities": [
+            "Plan and post 5+ pieces of content per week",
+            "Respond to DMs and comments within 4 working hours",
+            "Coordinate with the kitchen for shoots and product launches",
+        ],
+        "requirements": [
+            "Portfolio of past social work (links are fine)",
+            "Comfortable on camera and behind it",
+            "Eye for light, colour, and brand consistency",
+        ],
+    },
+    {
+        "slug": "wellness-writer",
+        "title": "Wellness Content Writer (Freelance)",
+        "location": "Remote · Contract",
+        "type": "Freelance",
+        "summary": "Write 2-4 articles per month for our Wellness Hub. Nutrition, recipes, lifestyle. Paid per piece.",
+        "responsibilities": [
+            "Pitch and write 600-1200-word articles",
+            "Cite sources; avoid AI-generated filler",
+            "Hit agreed deadlines",
+        ],
+        "requirements": [
+            "Published writing samples in wellness, food, or lifestyle",
+            "Background in nutrition or culinary arts is a plus",
+        ],
+    },
+]
+
+
+@app.route("/careers")
+def careers():
+    return render_template("public/careers.html", roles=CAREERS_OPEN_ROLES)
+
+
+@app.route("/careers/apply", methods=["POST"])
+def careers_apply():
+    """Applications are stored in contact_messages with a 'Careers application' subject,
+    so they appear in the admin Messages inbox without needing a new table."""
+    name = request.form.get("name", "").strip()
+    email = request.form.get("email", "").strip().lower()
+    role = request.form.get("role", "").strip()
+    phone = request.form.get("phone", "").strip()
+    message = request.form.get("message", "").strip()
+    if not name or not valid_email(email) or not role or not message:
+        flash("Please complete all required fields with a valid email.", "error")
+        return redirect(url_for("careers"))
+    subject = f"Careers application — {role}"
+    body = (f"Role: {role}\n"
+            f"Phone: {phone or '—'}\n\n"
+            f"Cover note:\n{message}")
+    get_db().execute("INSERT INTO contact_messages (name, email, subject, message) VALUES (?,?,?,?)",
+                     (name, email, subject, body))
+    get_db().commit()
+    notify_admins(f"Careers application from {name}", f"Role: {role}",
+                  url_for("admin_messages"))
+    flash("Thanks for applying — we'll get back to you within 5 business days.", "success")
+    return redirect(url_for("careers"))
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # WELLNESS HUB
 # ─────────────────────────────────────────────────────────────────────────────
@@ -2644,11 +3047,14 @@ def login():
             session.modified = True
             return redirect(url_for("login_mfa"))
 
-        session.clear()
+        safe_session_clear()
         session["uid"] = u["id"]
         session.permanent = True
         db.execute("UPDATE users SET last_login_at=datetime('now') WHERE id=?", (u["id"],))
         db.commit()
+        # Fold any guest cart into the user's persistent cart so they don't
+        # lose what they were shopping for.
+        merge_guest_cart_into_user()
         audit("auth.login", "user", u["id"])
         flash(f"Welcome back, {u['full_name'].split()[0]}.", "success")
         nxt = request.args.get("next") or (url_for("admin_dashboard") if u["role"] == "admin" else url_for("account_dashboard"))
@@ -2679,11 +3085,12 @@ def login_mfa():
         if verify_totp(u["mfa_secret"], code):
             next_url = session.pop("mfa_pending_next", "") or url_for(
                 "admin_dashboard" if u["role"] == "admin" else "account_dashboard")
-            session.clear()
+            safe_session_clear()
             session["uid"] = u["id"]
             session.permanent = True
             db.execute("UPDATE users SET last_login_at=datetime('now') WHERE id=?", (u["id"],))
             db.commit()
+            merge_guest_cart_into_user()
             audit("auth.login.mfa", "user", u["id"])
             flash(f"Welcome back, {u['full_name'].split()[0]}.", "success")
             return redirect(next_url)
@@ -2722,9 +3129,10 @@ def register():
             (email, generate_password_hash(password), full_name, phone, current_region()))
         uid = get_db().execute("SELECT last_insert_rowid() AS id").fetchone()["id"]
         get_db().commit()
-        session.clear()
+        safe_session_clear()
         session["uid"] = uid
         session.permanent = True
+        merge_guest_cart_into_user()
         notify_admins(f"New customer: {full_name}", f"{email} just registered.")
         audit("auth.register", "user", uid)
         flash("Welcome to KCBlendz — your account is ready.", "success")
@@ -2734,7 +3142,9 @@ def register():
 
 @app.route("/logout", methods=["POST"])
 def logout():
-    session.clear()
+    # Drop the guest cart token too — the next visitor on this device shouldn't
+    # inherit the previous user's basket. (Logged-in users' DB carts stay put.)
+    safe_session_clear(drop_cart_token=True)
     flash("You've been signed out.", "info")
     return redirect(url_for("home"))
 
@@ -3092,14 +3502,21 @@ def admin_dashboard():
         "revenue_month": revenue_month,
         "orders_today":  db.execute("SELECT COUNT(*) v FROM orders WHERE COALESCE(kind,'product')='product' AND date(created_at)=?", (today,)).fetchone()["v"],
         "orders_month":  db.execute("SELECT COUNT(*) v FROM orders WHERE COALESCE(kind,'product')='product' AND date(created_at)>=?", (month_start,)).fetchone()["v"],
+        # "Customers" badge MUST match what /admin/users shows by default — which
+        # is now "all users" (filtered to active here so suspended/deleted aren't
+        # counted as active customers on the headline number).
         "customers":     db.execute("SELECT COUNT(*) v FROM users WHERE role='customer' AND status='active'").fetchone()["v"],
         "products":      db.execute("SELECT COUNT(*) v FROM products WHERE is_active=1").fetchone()["v"],
+        # New paid-orders-today number so dashboard cards stay internally consistent:
+        # revenue_today (paid only) ↔ paid_orders_today (paid only) ↔ orders_today (all)
+        "paid_orders_today": db.execute("SELECT COUNT(*) v FROM orders WHERE COALESCE(kind,'product')='product' AND payment_status='paid' AND date(created_at)=?", (today,)).fetchone()["v"],
+        "pending_orders": db.execute("SELECT COUNT(*) v FROM orders WHERE COALESCE(kind,'product')='product' AND order_status='pending'").fetchone()["v"],
     }
     recent_orders = db.execute("SELECT * FROM orders WHERE COALESCE(kind,'product')='product' ORDER BY created_at DESC LIMIT 10").fetchall()
     recent_users = db.execute("SELECT * FROM users WHERE role='customer' ORDER BY created_at DESC LIMIT 5").fetchall()
-    pending_orders = db.execute("SELECT COUNT(*) AS v FROM orders WHERE COALESCE(kind,'product')='product' AND order_status='pending'").fetchone()["v"]
+    pending_orders = stats["pending_orders"]
     notifs = db.execute("SELECT * FROM notifications WHERE audience='admin' ORDER BY created_at DESC LIMIT 8").fetchall()
-    # last 7 days revenue by region for chart
+    # last 7 days revenue by region for chart — ALL filtered identically (product only).
     last7_ng = db.execute("""SELECT date(created_at) AS d, COALESCE(SUM(total),0) AS v
         FROM orders WHERE COALESCE(kind,'product')='product' AND payment_status='paid' AND region='NG' AND date(created_at)>=date('now','-6 days')
         GROUP BY date(created_at) ORDER BY d""").fetchall()
@@ -3107,7 +3524,7 @@ def admin_dashboard():
         FROM orders WHERE COALESCE(kind,'product')='product' AND payment_status='paid' AND region='MU' AND date(created_at)>=date('now','-6 days')
         GROUP BY date(created_at) ORDER BY d""").fetchall()
     last7_gl = db.execute("""SELECT date(created_at) AS d, COALESCE(SUM(total),0) AS v
-        FROM orders WHERE payment_status='paid' AND region='GL' AND date(created_at)>=date('now','-6 days')
+        FROM orders WHERE COALESCE(kind,'product')='product' AND payment_status='paid' AND region='GL' AND date(created_at)>=date('now','-6 days')
         GROUP BY date(created_at) ORDER BY d""").fetchall()
     return render_template("admin/dashboard.html", stats=stats,
                            recent_orders=recent_orders, recent_users=recent_users,
@@ -3334,13 +3751,106 @@ def admin_users():
     q = request.args.get("q", "").strip()
     region = request.args.get("region", "").strip()
     status = request.args.get("status", "").strip()
-    sql = "SELECT * FROM users WHERE role='customer'"; params = []
+    role = request.args.get("role", "").strip()
+    # Show ALL users by default (customers + admins) so the admin panel actually
+    # manages the full user base, not just customers. Role filter narrows when set.
+    sql = "SELECT * FROM users WHERE 1=1"; params = []
+    if role in ("customer", "admin"):
+        sql += " AND role=?"; params.append(role)
     if q: sql += " AND (full_name LIKE ? OR email LIKE ?)"; params += [f"%{q}%"]*2
     if region: sql += " AND region=?"; params.append(region)
     if status: sql += " AND status=?"; params.append(status)
     sql += " ORDER BY created_at DESC"
     users = get_db().execute(sql, params).fetchall()
-    return render_template("admin/users.html", users=users, q=q, region=region, status=status)
+    # Quick counts for the role-filter pills so the admin sees totals at a glance.
+    counts = {
+        "all":      get_db().execute("SELECT COUNT(*) c FROM users").fetchone()["c"],
+        "customer": get_db().execute("SELECT COUNT(*) c FROM users WHERE role='customer'").fetchone()["c"],
+        "admin":    get_db().execute("SELECT COUNT(*) c FROM users WHERE role='admin'").fetchone()["c"],
+    }
+    return render_template("admin/users.html", users=users, q=q, region=region,
+                           status=status, role=role, counts=counts)
+
+
+@app.route("/admin/users/new", methods=["GET", "POST"])
+@admin_required
+def admin_user_new():
+    """Create a new user (customer or admin) from the admin panel."""
+    if request.method == "POST":
+        full_name = request.form.get("full_name", "").strip()
+        email = request.form.get("email", "").strip().lower()
+        phone = request.form.get("phone", "").strip()
+        password = request.form.get("password", "")
+        role = request.form.get("role", "customer")
+        region = (request.form.get("region") or "").strip() or None
+        errors = []
+        if not full_name: errors.append("Full name is required.")
+        if not valid_email(email): errors.append("A valid email is required.")
+        if phone and not valid_phone(phone): errors.append("Phone number doesn't look valid.")
+        if len(password) < 8: errors.append("Password must be at least 8 characters.")
+        if role not in ("customer", "admin"): errors.append("Role must be customer or admin.")
+        if region and region not in REGIONS: errors.append("Region must be NG, MU, or GL.")
+        if get_db().execute("SELECT 1 FROM users WHERE email=?", (email,)).fetchone():
+            errors.append("A user with this email already exists.")
+        if errors:
+            for e in errors: flash(e, "error")
+            return render_template("admin/user_new.html", form=request.form)
+        db = get_db()
+        db.execute("""INSERT INTO users (email, password_hash, full_name, phone, role, region)
+            VALUES (?,?,?,?,?,?)""",
+            (email, generate_password_hash(password), full_name, phone or None, role, region))
+        uid = db.execute("SELECT last_insert_rowid() AS id").fetchone()["id"]
+        db.commit()
+        audit("user.create", "user", uid, {"role": role})
+        notify_admins(f"New {role} created: {full_name}", f"{email} was added by an admin.")
+        flash(f"User '{full_name}' created.", "success")
+        return redirect(url_for("admin_user_detail", uid=uid))
+    return render_template("admin/user_new.html", form={})
+
+
+@app.route("/admin/users/<int:uid>/edit", methods=["POST"])
+@admin_required
+def admin_user_edit(uid):
+    """Edit a user's contact details (name / phone / region) from the admin panel."""
+    u = get_db().execute("SELECT * FROM users WHERE id=?", (uid,)).fetchone()
+    if not u: abort(404)
+    full_name = request.form.get("full_name", "").strip()
+    phone = request.form.get("phone", "").strip()
+    region = (request.form.get("region") or "").strip() or None
+    if not full_name:
+        flash("Name is required.", "error")
+        return redirect(url_for("admin_user_detail", uid=uid))
+    if phone and not valid_phone(phone):
+        flash("Phone number doesn't look valid.", "error")
+        return redirect(url_for("admin_user_detail", uid=uid))
+    if region and region not in REGIONS:
+        flash("Invalid region.", "error")
+        return redirect(url_for("admin_user_detail", uid=uid))
+    get_db().execute("UPDATE users SET full_name=?, phone=?, region=? WHERE id=?",
+                     (full_name, phone or None, region, uid))
+    get_db().commit()
+    audit("user.edit", "user", uid)
+    flash("User details updated.", "success")
+    return redirect(url_for("admin_user_detail", uid=uid))
+
+
+@app.route("/admin/users/<int:uid>/reset-password", methods=["POST"])
+@admin_required
+def admin_user_reset_password(uid):
+    """Admin can issue a new password for a user (handy when a customer
+    can't get into their account and contacts support)."""
+    u = get_db().execute("SELECT * FROM users WHERE id=?", (uid,)).fetchone()
+    if not u: abort(404)
+    new_pw = request.form.get("password", "")
+    if len(new_pw) < 8:
+        flash("Password must be at least 8 characters.", "error")
+        return redirect(url_for("admin_user_detail", uid=uid))
+    get_db().execute("UPDATE users SET password_hash=?, login_attempts=0, locked_until=NULL WHERE id=?",
+                     (generate_password_hash(new_pw), uid))
+    get_db().commit()
+    audit("user.password_reset", "user", uid)
+    flash("Password reset. Share the new credentials with the user securely.", "success")
+    return redirect(url_for("admin_user_detail", uid=uid))
 
 
 @app.route("/admin/users/<int:uid>")
@@ -3657,24 +4167,29 @@ def admin_profile():
 @app.route("/api/region/<region>", methods=["POST"])
 def api_set_region(region):
     """Switch region without leaving the current page. The frontend posts here
-    via fetch() and reloads-in-place. Returns the new region + a flag the UI
-    uses to decide whether to clear the cart (true when items exist and the
-    region actually changed).
+    via fetch() and reloads-in-place. Cart items are RE-PRICED in the new
+    currency (items not sold in the new region are dropped); the cart is
+    NEVER wiped on a region switch.
     """
     if region not in REGIONS:
         return jsonify({"ok": False, "error": "invalid region"}), 400
-    cart = get_cart()
-    items_existed = bool(cart.get("items"))
-    region_changed = cart.get("region") != region
+    cart_before = get_cart()
+    had_items = bool(cart_before.get("items"))
+    prev_region = cart_before.get("region")
     session["region"] = region
-    cart_clear_if_region_change()
     session.modified = True
+    g.pop("cart", None)  # force re-read so reprice operates on fresh state
+    cart_reprice_on_region_change()
+    cart_after = get_cart()
+    dropped = max(0, len(cart_before.get("items", [])) - len(cart_after.get("items", [])))
     return jsonify({
         "ok": True,
         "region": region,
         "currency": currency_for_region(region),
         "symbol": REGIONS[region]["symbol"],
-        "cart_cleared": items_existed and region_changed,
+        "cart_kept": len(cart_after.get("items", [])),
+        "cart_dropped": dropped,
+        "cart_repriced": had_items and prev_region != region,
     })
 
 
@@ -3710,7 +4225,7 @@ def api_cart_add():
             "image": p["image_url"], "meta": p["ingredients"] or "",
             "unit_price": p[price_col], "quantity": qty,
         })
-    session.modified = True
+    persist_cart()
     return jsonify({
         "ok": True,
         "name": p["name"],
@@ -4467,7 +4982,7 @@ def sitemap():
     urls = [
         "/", "/store", "/home", "/shop", "/builder", "/wellness",
         "/about", "/contact", "/faq", "/privacy", "/terms",
-        "/refund-policy", "/shipping-policy",
+        "/refund-policy", "/shipping-policy", "/careers",
     ]
     for p in db.execute("SELECT slug FROM products WHERE is_active=1").fetchall():
         urls.append(f"/product/{p['slug']}")

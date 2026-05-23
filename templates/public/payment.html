@@ -9,6 +9,71 @@
     <p class="text-gray-600 mt-1 text-sm">Order <span class="font-bold text-[var(--kc-dark)]">{{ order.order_number }}</span> · Total <span class="font-extrabold text-[var(--kc-orange)]">{{ format_money(order.total, order.region) }}</span></p>
   </div>
 
+  {# ─── Change payment method without losing the order. Lets the customer
+       switch (e.g. card → PayPal) without redoing checkout. Only the methods
+       valid for their region are shown. #}
+  <details class="mb-6 bg-white rounded-2xl border-2 border-[var(--kc-dark)] p-5"
+           {% if request.args.get('change_method') %}open{% endif %}>
+    <summary class="cursor-pointer flex items-center justify-between gap-3 select-none">
+      <div>
+        <p class="text-[10px] uppercase tracking-widest font-extrabold text-gray-500">Current method</p>
+        <p class="font-extrabold text-base mt-0.5">
+          {% if order.payment_method == 'card' %}Credit / Debit Card
+          {% elif order.payment_method == 'paystack' %}Paystack
+          {% elif order.payment_method == 'paypal' %}PayPal
+          {% elif order.payment_method == 'bank_transfer' %}Bank transfer
+          {% else %}{{ order.payment_method }}{% endif %}
+        </p>
+      </div>
+      <span class="text-xs font-extrabold uppercase tracking-wider text-[var(--kc-orange)] inline-flex items-center gap-1.5">
+        Change method
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"/></svg>
+      </span>
+    </summary>
+    <form method="post" action="{{ url_for('payment_method_change', order_id=order.id) }}" class="mt-5 space-y-3">
+      <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+
+      <label class="flex items-center gap-3 border-2 border-[var(--kc-dark)] rounded-xl p-3 cursor-pointer hover:bg-[var(--kc-yellow)] transition has-[:checked]:bg-[var(--kc-green)] has-[:checked]:text-white">
+        <input type="radio" name="payment_method" value="card" {% if order.payment_method == 'card' %}checked{% endif %} class="w-4 h-4 accent-[var(--kc-orange)]">
+        <div class="flex-1">
+          <p class="font-extrabold text-sm">Credit / Debit Card</p>
+          <p class="text-xs opacity-80">Visa, Mastercard, Amex</p>
+        </div>
+      </label>
+
+      {% if order.region == 'NG' %}
+      <label class="flex items-center gap-3 border-2 border-[var(--kc-dark)] rounded-xl p-3 cursor-pointer hover:bg-[var(--kc-yellow)] transition has-[:checked]:bg-[var(--kc-green)] has-[:checked]:text-white">
+        <input type="radio" name="payment_method" value="paystack" {% if order.payment_method == 'paystack' %}checked{% endif %} class="w-4 h-4 accent-[var(--kc-orange)]">
+        <div class="flex-1">
+          <p class="font-extrabold text-sm">Paystack</p>
+          <p class="text-xs opacity-80">Cards, USSD, Bank Transfer, Mobile Money</p>
+        </div>
+      </label>
+      {% endif %}
+
+      <label class="flex items-center gap-3 border-2 border-[var(--kc-dark)] rounded-xl p-3 cursor-pointer hover:bg-[var(--kc-yellow)] transition has-[:checked]:bg-[var(--kc-green)] has-[:checked]:text-white">
+        <input type="radio" name="payment_method" value="paypal" {% if order.payment_method == 'paypal' %}checked{% endif %} class="w-4 h-4 accent-[var(--kc-orange)]">
+        <div class="flex-1">
+          <p class="font-extrabold text-sm">PayPal</p>
+          <p class="text-xs opacity-80">Sign in to PayPal · or pay as guest with a card</p>
+        </div>
+      </label>
+
+      <label class="flex items-center gap-3 border-2 border-[var(--kc-dark)] rounded-xl p-3 cursor-pointer hover:bg-[var(--kc-yellow)] transition has-[:checked]:bg-[var(--kc-green)] has-[:checked]:text-white">
+        <input type="radio" name="payment_method" value="bank_transfer" {% if order.payment_method == 'bank_transfer' %}checked{% endif %} class="w-4 h-4 accent-[var(--kc-orange)]">
+        <div class="flex-1">
+          <p class="font-extrabold text-sm">Bank transfer</p>
+          <p class="text-xs opacity-80">Upload proof after transfer — we confirm within 12h</p>
+        </div>
+      </label>
+
+      <button type="submit"
+              class="btn-outline-dark inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-extrabold uppercase tracking-wider">
+        Update payment method
+      </button>
+    </form>
+  </details>
+
   <div class="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8">
     <!-- LEFT: payment form, branches per method -->
     <div>

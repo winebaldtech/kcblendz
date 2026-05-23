@@ -1,14 +1,44 @@
 {% extends "admin/_layout.html" %}
 {% set active = 'users' %}
-{% block title %}Admin — Customers{% endblock %}
-{% block page_title %}Customers{% endblock %}
+{% block title %}Admin — Users{% endblock %}
+{% block page_title %}Users{% endblock %}
 
 {% block admin_body %}
-<div class="bg-white rounded-2xl border-2 border-black p-5">
+<div class="bg-white rounded-2xl border-2 border-[var(--kc-dark)] p-5">
+
+  {# ─── Role filter pills + "New user" CTA. Counts make the page self-describing
+       so admins know how many users live behind each filter without clicking. #}
+  <div class="flex items-center justify-between flex-wrap gap-3 mb-4 pb-4 border-b-2 border-dashed border-[var(--kc-dark)]/15">
+    <div class="flex items-center gap-2 flex-wrap">
+      {% set base_qs = (('q', q), ('region', region), ('status', status)) %}
+      {% set _r_args = {'role': ''} %}
+      {% for k, v in base_qs %}{% if v %}{% set _ = _r_args.update({k: v}) %}{% endif %}{% endfor %}
+      <a href="{{ url_for('admin_users', **_r_args) }}"
+         class="role-pill {% if not role %}is-active{% endif %}">
+         All <span class="role-pill__count">{{ counts.all }}</span>
+      </a>
+      {% set _r_args2 = _r_args.copy() %}{% set _ = _r_args2.update({'role': 'customer'}) %}
+      <a href="{{ url_for('admin_users', **_r_args2) }}"
+         class="role-pill {% if role == 'customer' %}is-active{% endif %}">
+         Customers <span class="role-pill__count">{{ counts.customer }}</span>
+      </a>
+      {% set _r_args3 = _r_args.copy() %}{% set _ = _r_args3.update({'role': 'admin'}) %}
+      <a href="{{ url_for('admin_users', **_r_args3) }}"
+         class="role-pill {% if role == 'admin' %}is-active{% endif %}">
+         Admins <span class="role-pill__count">{{ counts.admin }}</span>
+      </a>
+    </div>
+    <a href="{{ url_for('admin_user_new') }}" class="btn-fuchsia inline-flex items-center gap-2 px-4 py-2 rounded-full font-extrabold uppercase tracking-wider text-xs border-2 border-[var(--kc-dark)] shadow-[3px_3px_0_var(--kc-dark)]">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      New user
+    </a>
+  </div>
+
   <form method="get" action="{{ url_for('admin_users') }}" class="flex flex-wrap items-center gap-3 mb-4">
-    <div class="flex flex-1 min-w-[220px] border-2 border-black rounded-full overflow-hidden">
+    <input type="hidden" name="role" value="{{ role }}">
+    <div class="flex flex-1 min-w-[220px] border-2 border-[var(--kc-dark)] rounded-full overflow-hidden">
       <input type="search" name="q" value="{{ q }}" placeholder="Name or email..." class="flex-1 px-3 py-2 text-sm outline-none">
-      <button type="submit" class="bg-[var(--fuchsia)] text-white px-3">
+      <button type="submit" class="bg-[var(--kc-orange)] text-white px-3" aria-label="Search">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       </button>
     </div>
@@ -24,8 +54,8 @@
       <option value="suspended" {% if status=='suspended' %}selected{% endif %}>Suspended</option>
       <option value="deleted" {% if status=='deleted' %}selected{% endif %}>Deleted</option>
     </select>
-    {% if q or region or status %}
-      <a href="{{ url_for('admin_users') }}" class="text-xs font-bold uppercase tracking-wider hover:text-[var(--fuchsia)]">Clear</a>
+    {% if q or region or status or role %}
+      <a href="{{ url_for('admin_users') }}" class="text-xs font-bold uppercase tracking-wider hover:text-[var(--kc-orange)]">Clear</a>
     {% endif %}
     <a href="{{ url_for('admin_users_export') }}" class="btn-export ml-auto">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -35,9 +65,10 @@
 
   <div class="overflow-x-auto">
     <table class="w-full text-sm">
-      <thead class="text-[11px] uppercase tracking-widest text-gray-500 border-b-2 border-black">
+      <thead class="text-[11px] uppercase tracking-widest text-gray-500 border-b-2 border-[var(--kc-dark)]">
         <tr>
-          <th class="text-left py-2">Customer</th>
+          <th class="text-left py-2">User</th>
+          <th class="text-left">Role</th>
           <th class="text-left">Phone</th>
           <th class="text-left">Region</th>
           <th class="text-left">Status</th>
@@ -47,33 +78,65 @@
       </thead>
       <tbody>
       {% for u in users %}
-        <tr class="border-b border-dashed border-gray-200 hover:bg-[var(--lime)]/10">
+        <tr class="border-b border-dashed border-gray-200 hover:bg-[var(--kc-yellow)]/10">
           <td class="py-2">
             <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-full bg-[var(--lime)] border-2 border-black flex items-center justify-center font-extrabold text-xs">
-                {{ (u['full_name'][:1] | upper) if u['full_name'] else '?' }}
+              <div class="w-9 h-9 rounded-full bg-[var(--kc-yellow)] border-2 border-[var(--kc-dark)] flex items-center justify-center font-extrabold text-xs overflow-hidden">
+                {% if u['avatar_url'] %}
+                  <img src="{{ u['avatar_url'] }}" alt="" class="w-full h-full object-cover">
+                {% else %}
+                  {{ (u['full_name'][:1] | upper) if u['full_name'] else '?' }}
+                {% endif %}
               </div>
               <div>
-                <a href="{{ url_for('admin_user_detail', uid=u['id']) }}" class="font-bold hover:text-[var(--fuchsia)]">{{ u['full_name'] or '—' }}</a>
+                <a href="{{ url_for('admin_user_detail', uid=u['id']) }}" class="font-bold hover:text-[var(--kc-orange)]">{{ u['full_name'] or '—' }}</a>
                 <p class="text-[11px] text-gray-500">{{ u['email'] }}</p>
               </div>
             </div>
           </td>
-          <td class="py-2 text-gray-700">{{ u['phone'] or '—' }}</td>
-          <td class="py-2"><span class="badge-square bg-gray-100 border border-black">{{ u['region'] or '—' }}</span></td>
           <td class="py-2">
-            <span class="badge-square {% if u['status']=='active' %}bg-[var(--lime)] text-black{% elif u['status']=='suspended' %}bg-[var(--yellow)] text-black{% else %}bg-gray-200 text-gray-700{% endif %}">{{ u['status'] }}</span>
+            <span class="badge-square {% if u['role']=='admin' %}bg-[var(--kc-orange)] text-white{% else %}bg-gray-100 text-[var(--kc-dark)] border border-[var(--kc-dark)]/20{% endif %}">{{ u['role'] }}</span>
+          </td>
+          <td class="py-2 text-gray-700">{{ u['phone'] or '—' }}</td>
+          <td class="py-2"><span class="badge-square bg-gray-100 border border-[var(--kc-dark)]/20">{{ u['region'] or '—' }}</span></td>
+          <td class="py-2">
+            <span class="badge-square {% if u['status']=='active' %}bg-[var(--kc-green)] text-white{% elif u['status']=='suspended' %}bg-[var(--kc-yellow)] text-[var(--kc-dark)]{% else %}bg-gray-200 text-gray-700{% endif %}">{{ u['status'] }}</span>
           </td>
           <td class="py-2 text-xs text-gray-500">{{ u['created_at'][:10] }}</td>
           <td class="py-2 text-right">
-            <a href="{{ url_for('admin_user_detail', uid=u['id']) }}" class="text-xs font-bold uppercase tracking-wider hover:text-[var(--fuchsia)]">View</a>
+            <a href="{{ url_for('admin_user_detail', uid=u['id']) }}" class="text-xs font-bold uppercase tracking-wider hover:text-[var(--kc-orange)]">View →</a>
           </td>
         </tr>
       {% else %}
-        <tr><td colspan="6" class="text-center py-8 text-gray-500">No customers match these filters.</td></tr>
+        <tr><td colspan="7" class="text-center py-10 text-gray-500">
+          No users match these filters.
+          {% if q or region or status or role %}
+            <a href="{{ url_for('admin_users') }}" class="link ml-1">Clear filters</a>
+          {% endif %}
+        </td></tr>
       {% endfor %}
       </tbody>
     </table>
   </div>
 </div>
+
+<style>
+  .role-pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 14px; border-radius: 9999px;
+    border: 2px solid var(--kc-dark);
+    background: #fff; color: var(--kc-dark);
+    font-size: 12px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: .08em;
+    transition: background .15s, color .15s;
+  }
+  .role-pill:hover { background: var(--kc-yellow); }
+  .role-pill.is-active { background: var(--kc-green); color: #fff; box-shadow: 2px 2px 0 var(--kc-dark); }
+  .role-pill__count {
+    background: var(--kc-dark); color: #fff;
+    padding: 2px 8px; border-radius: 9999px;
+    font-size: 10px; font-weight: 800;
+  }
+  .role-pill.is-active .role-pill__count { background: rgba(0,0,0,0.25); }
+</style>
 {% endblock %}

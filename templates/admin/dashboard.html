@@ -8,7 +8,9 @@
 {% endblock %}
 
 {% block admin_body %}
-<!-- Stat cards -->
+<!-- Stat cards — every card is internally consistent: the headline number and
+     the sub-label below it are computed from the SAME filter (paid orders are
+     counted with paid orders, all orders with all orders, etc.). -->
 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
   <!-- Revenue today (split by currency so we never mix NGN, MUR & USD into one number) -->
   <div class="bg-white rounded-2xl border-2 border-[var(--kc-dark)] p-4 shadow-[4px_4px_0_var(--kc-orange)]">
@@ -22,6 +24,7 @@
           </p>
         {% endfor %}
       </div>
+      <p class="text-[11px] text-gray-500 mt-1">From {{ stats['paid_orders_today'] }} paid order{{ '' if stats['paid_orders_today']==1 else 's' }}</p>
     {% else %}
       <p class="text-2xl font-extrabold mt-1 text-gray-300">—</p>
       <p class="text-[11px] text-gray-500 mt-0.5">No paid orders today</p>
@@ -38,17 +41,22 @@
           </p>
         {% endfor %}
       </div>
+      <p class="text-[11px] text-gray-500 mt-1">Paid orders only</p>
     {% else %}
       <p class="text-2xl font-extrabold mt-1 text-gray-300">—</p>
+      <p class="text-[11px] text-gray-500 mt-0.5">No revenue yet this month</p>
     {% endif %}
   </div>
   <div class="bg-white rounded-2xl border-2 border-[var(--kc-dark)] p-4 shadow-[4px_4px_0_var(--kc-green)]">
     <p class="text-[10px] uppercase tracking-widest font-bold text-gray-500">Orders today</p>
     <p class="text-2xl md:text-3xl font-extrabold mt-1 text-[var(--kc-dark)]">{{ stats['orders_today'] }}</p>
-    <p class="text-[11px] text-gray-500 mt-0.5">{{ stats['orders_month'] }} this month</p>
+    <p class="text-[11px] text-gray-500 mt-0.5">
+      {{ stats['orders_month'] }} this month
+      {% if stats['pending_orders'] %} · <a href="{{ url_for('admin_orders') }}?status=pending" class="text-[var(--kc-orange)] font-bold hover:underline">{{ stats['pending_orders'] }} pending</a>{% endif %}
+    </p>
   </div>
   <div class="bg-white rounded-2xl border-2 border-[var(--kc-dark)] p-4 shadow-[4px_4px_0_var(--kc-green-deep)]">
-    <p class="text-[10px] uppercase tracking-widest font-bold text-gray-500">Customers</p>
+    <p class="text-[10px] uppercase tracking-widest font-bold text-gray-500">Active customers</p>
     <p class="text-2xl md:text-3xl font-extrabold mt-1 text-[var(--kc-dark)]">{{ stats['customers'] }}</p>
     <p class="text-[11px] text-gray-500 mt-0.5">{{ stats['products'] }} active products</p>
   </div>

@@ -102,35 +102,39 @@
           Payment method
         </h2>
         <div class="space-y-3">
-          {% if region == 'NG' %}
+          <!-- Generic card processor — works in all regions -->
           <label class="flex items-center gap-3 border-2 border-black rounded-xl p-3 cursor-pointer hover:bg-[var(--lime)] transition has-[:checked]:bg-[var(--fuchsia)] has-[:checked]:text-white">
-            <input type="radio" name="payment_method" value="card" checked class="w-4 h-4 accent-[var(--fuchsia)]">
+            <input type="radio" name="payment_method" value="card" {% if region != 'NG' %}checked{% endif %} class="w-4 h-4 accent-[var(--fuchsia)]">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
             <div class="flex-1">
-              <p class="font-extrabold text-sm">Card &amp; more (Paystack)</p>
-              <p class="text-xs opacity-80">Visa, Mastercard, Verve, USSD, Bank &amp; Mobile Money</p>
-            </div>
-          </label>
-          {% else %}
-          <label class="flex items-center gap-3 border-2 border-black rounded-xl p-3 cursor-pointer hover:bg-[var(--lime)] transition has-[:checked]:bg-[var(--fuchsia)] has-[:checked]:text-white">
-            <input type="radio" name="payment_method" value="card" checked class="w-4 h-4 accent-[var(--fuchsia)]">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-            <div class="flex-1">
-              <p class="font-extrabold text-sm">Credit / Debit card</p>
-              <p class="text-xs opacity-80">Visa, Mastercard, Amex — securely processed</p>
+              <p class="font-extrabold text-sm">Credit / Debit Card</p>
+              <p class="text-xs opacity-80">Visa, Mastercard, Amex — secure card payment</p>
             </div>
           </label>
 
+          {% if region == 'NG' %}
+          <!-- Paystack — Nigeria only (handles cards, USSD, bank, mobile money) -->
           <label class="flex items-center gap-3 border-2 border-black rounded-xl p-3 cursor-pointer hover:bg-[var(--lime)] transition has-[:checked]:bg-[var(--fuchsia)] has-[:checked]:text-white">
-            <input type="radio" name="payment_method" value="paypal" class="w-4 h-4 accent-[var(--fuchsia)]">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M7.5 5h7.6c2.5 0 4.6 1.6 4.6 4 0 3-2.5 5-5.4 5h-2.2c-.4 0-.7.3-.8.7l-1.1 5.1c-.1.3-.4.5-.7.5H6.4c-.3 0-.6-.3-.5-.6L7.5 5z"/></svg>
+            <input type="radio" name="payment_method" value="paystack" checked class="w-4 h-4 accent-[var(--fuchsia)]">
+            <span class="inline-flex items-center justify-center w-6 h-6 rounded-md bg-[#011B33] text-[#00C3F7] text-[10px] font-extrabold">P</span>
             <div class="flex-1">
-              <p class="font-extrabold text-sm">PayPal</p>
-              <p class="text-xs opacity-80">Log in to PayPal and pay with your balance or linked card</p>
+              <p class="font-extrabold text-sm">Paystack</p>
+              <p class="text-xs opacity-80">Cards, USSD, Bank Transfer, Mobile Money</p>
             </div>
           </label>
           {% endif %}
 
+          <!-- PayPal (everywhere — global coverage) -->
+          <label class="flex items-center gap-3 border-2 border-black rounded-xl p-3 cursor-pointer hover:bg-[var(--lime)] transition has-[:checked]:bg-[var(--fuchsia)] has-[:checked]:text-white">
+            <input type="radio" name="payment_method" value="paypal" class="w-4 h-4 accent-[var(--fuchsia)]">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="#003087"><path d="M7.5 5h7.6c2.5 0 4.6 1.6 4.6 4 0 3-2.5 5-5.4 5h-2.2c-.4 0-.7.3-.8.7l-1.1 5.1c-.1.3-.4.5-.7.5H6.4c-.3 0-.6-.3-.5-.6L7.5 5z"/></svg>
+            <div class="flex-1">
+              <p class="font-extrabold text-sm">PayPal</p>
+              <p class="text-xs opacity-80">Sign in to PayPal · or pay as guest with a card</p>
+            </div>
+          </label>
+
+          <!-- Bank transfer (everywhere) -->
           <label class="flex items-center gap-3 border-2 border-black rounded-xl p-3 cursor-pointer hover:bg-[var(--lime)] transition has-[:checked]:bg-[var(--fuchsia)] has-[:checked]:text-white">
             <input type="radio" name="payment_method" value="bank_transfer" class="w-4 h-4 accent-[var(--fuchsia)]">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M3 10h18"/><path d="M5 6l7-3 7 3"/><path d="M4 10v11"/><path d="M20 10v11"/><path d="M8 14v3"/><path d="M12 14v3"/><path d="M16 14v3"/></svg>

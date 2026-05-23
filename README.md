@@ -6,47 +6,6 @@ A production-ready, full-stack e-commerce website built for **KCBlendz**, a stud
 
 This repository delivers a complete, demo-ready website covering every part of the buyer's journey and every back-office workflow an owner needs.
 
-## v3.3 — Strict separation of orders and subscriptions (latest)
-
-Orders and subscriptions are completely different products and are now strictly separated across the entire app:
-
-- **`/admin/orders` only shows product orders** — subscription orders are filtered out (`WHERE is_subscription=0`). They live on `/admin/subscriptions` where they belong.
-- **Customer `/account/orders` only shows product orders** too. The new **`/account/subscriptions`** page surfaces the customer's plans, with a "Complete payment" CTA for pending-payment ones and a Cancel button for active ones.
-- **Account sidebar** has a new "My Subscriptions" link between Orders and Favorites.
-- **Admin user-detail page** shows orders and subscriptions in separate panels.
-- **Payment success messaging is subscription-aware** — subscriptions get "Subscription payment received" notifications linking to `/account` or `/admin/subscriptions` instead of "Payment received for order X" linking to order details.
-- **Kitchen pipeline skipped for subscriptions** — no more "Sent to kitchen" timeline event polluting subscription orders. They go directly to `order_status='delivered'` once paid, matching the 3-step subscription flow (Plan selected → Payment confirmed → Subscription active).
-- **Thank-you page is subscription-aware** — "You're in!" + "Go to my account" for subscribers; "Thank you!" + "Track this order" for product buyers.
-- **CSV exports respect separation** — orders.csv has product orders only; subscriptions.csv has the subscription records.
-
-## v3.2 — Unified exports, smart timelines, robust print
-
-- Unified Export CSV button everywhere (Customers / Orders / Products / Subscriptions / Reports).
-- New Subscriptions admin page with stat cards and cancel action.
-- Products + Subscriptions CSV exports.
-- Subscriptions use a clean 3-step timeline; regular orders fill skipped steps cleanly.
-- Receipt logo print bug fixed (waits for `img.decode()` + `load` before printing).
-- Payment page subscription-aware ("Step 2 of 2" / "Back to plans").
-
-## v3.1 — Payment-gated subscriptions
-
-- Subscriptions require payment before activation (card, PayPal, bank transfer).
-- Home subscription section matches `/subscribe` exactly.
-- Wellness dropdown removed; Contact map uses exact pin.
-- "Stripe" wiped everywhere.
-- Products full CRUD; Promo full CRUD.
-- Dashboard chart uses separate Y axes per region.
-
-## v3 — Production hardening
-
-- End-to-end payment processing.
-- Reliable receipt print.
-- Subscription plans + promos seeded.
-- Full CRUD for categories and FAQs.
-- MFA (TOTP) for admins.
-- Comprehensive report exports.
-
-
 ## Table of contents
 
 1. [What's inside](#whats-inside)

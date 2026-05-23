@@ -17,7 +17,12 @@
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
     <!-- Main hero -->
     <div class="lg:col-span-8 relative rounded-2xl border-2 border-black overflow-hidden min-h-[420px] md:min-h-[520px]">
-      <video autoplay muted loop playsinline class="absolute inset-0 w-full h-full object-cover">
+      <video autoplay muted loop playsinline
+             preload="metadata"
+             disablepictureinpicture disableremoteplayback
+             controlslist="nodownload nofullscreen noremoteplayback"
+             oncontextmenu="return false"
+             class="absolute inset-0 w-full h-full object-cover pointer-events-none">
         <source src="{{ url_for('static', filename='img/kcblendz-video.mp4') }}" type="video/mp4">
       </video>
       <!-- Two-layer overlay: subtle wash across the whole image + heavy bottom-to-top
@@ -175,88 +180,85 @@
 </section>
 {% endif %}
 
-<!-- Subscription plans — identical to /subscribe -->
-{% if sub_plans %}
-{% set region = current_region() %}
+<!-- Subscription plans — same look & feel as the /subscribe page, no separate comparison -->
+{% if plans %}
+{% set region = current_region() or 'MU' %}
 {% set price_field = 'price_ngn' if region == 'NG' else ('price_mur' if region == 'MU' else 'price_usd') %}
-<section class="bg-gradient-to-br from-[var(--kc-cream)] via-white to-[var(--kc-yellow)]/20 py-16 border-y-2 border-[var(--kc-dark)] mt-6">
+<section class="bg-gradient-to-br from-[var(--kc-cream)] via-white to-[var(--kc-yellow)]/20 py-16 mt-6 border-y-2 border-[var(--kc-dark)]">
   <div class="max-w-5xl mx-auto px-4 text-center">
-    <span class="inline-block bg-[var(--kc-yellow)] text-[var(--kc-dark)] text-[11px] uppercase tracking-[0.25em] font-extrabold px-3 py-1 rounded-full border-2 border-[var(--kc-dark)]">Subscribe &amp; save</span>
-    <h2 class="brand text-4xl md:text-5xl mt-4">Wellness on autopilot</h2>
-    <p class="text-lg text-gray-700 mt-4 max-w-2xl mx-auto">Get your blends on a rhythm. Pause, swap or cancel any time — no judgments, no fine print.</p>
+    <span class="inline-block bg-[var(--kc-yellow)] text-[var(--kc-dark)] text-[11px] uppercase tracking-[0.25em] font-extrabold px-3 py-1 rounded-full border-2 border-[var(--kc-dark)]">Subscribe & save</span>
+    <h2 class="font-display text-4xl md:text-5xl mt-4">Wellness on autopilot</h2>
+    <p class="text-lg text-gray-700 mt-3 max-w-2xl mx-auto">Get your blends on a rhythm. Pause, swap or cancel any time — no judgments, no fine print.</p>
 
-    <!-- Billing cycle toggle -->
-    <div class="inline-flex items-center bg-white border-2 border-[var(--kc-dark)] rounded-full p-1 mt-6 shadow-[3px_3px_0_var(--kc-dark)]">
-      <button class="home-cycle-btn home-cycle-active px-5 py-2 text-xs font-extrabold uppercase tracking-wider rounded-full bg-[var(--kc-dark)] text-white" data-cycle="monthly">Monthly</button>
-      <button class="home-cycle-btn px-5 py-2 text-xs font-extrabold uppercase tracking-wider rounded-full" data-cycle="yearly">Yearly <span class="text-[10px] text-emerald-600 font-bold">— save 17%</span></button>
+    {# Monthly / Yearly toggle — same JS pattern as /subscribe #}
+    <div class="inline-flex items-center bg-white border-2 border-[var(--kc-dark)] rounded-full p-1 mt-6 shadow-[3px_3px_0_var(--kc-dark)]" role="tablist">
+      <button class="cycle-btn-home px-5 py-2 text-xs font-extrabold uppercase tracking-wider rounded-full bg-[var(--kc-dark)] text-white" data-cycle="monthly">Monthly</button>
+      <button class="cycle-btn-home px-5 py-2 text-xs font-extrabold uppercase tracking-wider rounded-full" data-cycle="yearly">Yearly <span class="text-[10px] text-emerald-600 font-bold">— save 17%</span></button>
     </div>
   </div>
-</section>
 
-<section class="max-w-6xl mx-auto px-4 py-12">
-  <div class="grid md:grid-cols-3 gap-5">
-    {% for p in sub_plans %}
-    {% set features = p['features_json']|from_json if p['features_json'] is string else p['features_json'] %}
-    <article class="relative bg-white border-2 border-[var(--kc-dark)] rounded-2xl p-6 shadow-[5px_5px_0_var(--kc-dark)] flex flex-col {% if p['is_featured'] %}md:scale-105 md:-mt-2 ring-2 ring-[var(--kc-orange)]{% endif %}">
-      {% if p['is_featured'] %}
-        <span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-[var(--kc-orange)] text-white text-[10px] uppercase tracking-[0.25em] font-extrabold px-3 py-1 rounded-full border-2 border-[var(--kc-dark)]">Most popular</span>
-      {% endif %}
-      <h3 class="brand text-3xl">{{ p['name'] }}</h3>
-      <p class="text-sm text-gray-600 mt-1">{{ p['tagline'] }}</p>
+  <div class="max-w-6xl mx-auto px-4 mt-10">
+    <div class="grid md:grid-cols-3 gap-5">
+      {% for p in plans %}
+      {% set features = p['features_json']|from_json %}
+      <article class="relative bg-white border-2 border-[var(--kc-dark)] rounded-2xl p-6 shadow-[5px_5px_0_var(--kc-dark)] flex flex-col {% if p['is_featured'] %}md:scale-105 md:-mt-2 ring-2 ring-[var(--kc-orange)]{% endif %}">
+        {% if p['is_featured'] %}
+          <span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-[var(--kc-orange)] text-white text-[10px] uppercase tracking-[0.25em] font-extrabold px-3 py-1 rounded-full border-2 border-[var(--kc-dark)]">Most popular</span>
+        {% endif %}
+        <h3 class="font-display text-3xl">{{ p['name'] }}</h3>
+        <p class="text-sm text-gray-600 mt-1">{{ p['tagline'] }}</p>
 
-      <div class="my-5">
-        <p class="text-3xl font-extrabold home-price-monthly" data-cycle="monthly">
-          {{ format_money(p[price_field ~ '_monthly'], region) }}<span class="text-sm font-semibold text-gray-500">/mo</span>
-        </p>
-        <p class="text-3xl font-extrabold home-price-yearly hidden" data-cycle="yearly">
-          {{ format_money(p[price_field ~ '_yearly'], region) }}<span class="text-sm font-semibold text-gray-500">/yr</span>
-        </p>
-      </div>
+        <div class="my-5">
+          <p class="text-3xl font-extrabold price-monthly-home" data-cycle="monthly">
+            {{ format_money(p[price_field ~ '_monthly'], region) }}<span class="text-sm font-semibold text-gray-500">/mo</span>
+          </p>
+          <p class="text-3xl font-extrabold price-yearly-home hidden" data-cycle="yearly">
+            {{ format_money(p[price_field ~ '_yearly'], region) }}<span class="text-sm font-semibold text-gray-500">/yr</span>
+          </p>
+        </div>
 
-      <ul class="space-y-2 text-sm flex-1">
-        {% for f in features %}
-        <li class="flex items-start gap-2">
-          <svg class="text-[var(--kc-green)] mt-0.5 shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          <span>{{ f }}</span>
-        </li>
-        {% endfor %}
-      </ul>
+        <ul class="space-y-2 text-sm flex-1">
+          {% for f in features %}
+            <li class="flex items-start gap-2">
+              <svg class="text-[var(--kc-green)] mt-0.5 shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>{{ f }}</span>
+            </li>
+          {% endfor %}
+        </ul>
 
-      <a href="{{ url_for('subscribe_plan', slug=p['slug']) }}?cycle=monthly"
-         data-home-plan-cta
-         class="mt-6 block text-center {% if p['is_featured'] %}btn-orange{% else %}btn-outline-dark{% endif %} border-2 border-[var(--kc-dark)] rounded-full px-5 py-3 font-extrabold uppercase tracking-wider text-sm shadow-[3px_3px_0_var(--kc-dark)]">
-        Choose {{ p['name'] }}
-      </a>
-    </article>
-    {% endfor %}
+        <a href="{{ url_for('subscribe_plan', slug=p['slug']) }}?cycle=monthly"
+           data-plan-cta-home
+           class="mt-6 block text-center {% if p['is_featured'] %}btn-orange{% else %}btn-outline-dark{% endif %} border-2 border-[var(--kc-dark)] rounded-full px-5 py-3 font-extrabold uppercase tracking-wider text-sm shadow-[3px_3px_0_var(--kc-dark)]">
+          Choose {{ p['name'] }}
+        </a>
+      </article>
+      {% endfor %}
+    </div>
+    <p class="text-center text-xs text-gray-500 mt-8">Pause or cancel any time from your account. Subscriptions are billed in your store's currency.</p>
   </div>
-  <p class="text-center text-xs text-gray-500 mt-8">Pause or cancel any time from your account. Subscriptions are billed in your store's currency.</p>
 </section>
 
 <script>
 (function(){
-  var current = 'monthly';
   function set(c){
-    current = c;
-    document.querySelectorAll('.home-cycle-btn').forEach(function(b){
-      var active = b.dataset.cycle === c;
-      b.classList.toggle('bg-[var(--kc-dark)]', active);
-      b.classList.toggle('text-white', active);
+    document.querySelectorAll('.cycle-btn-home').forEach(function(b){
+      var on = b.dataset.cycle === c;
+      b.classList.toggle('bg-[var(--kc-dark)]', on);
+      b.classList.toggle('text-white', on);
     });
-    document.querySelectorAll('.home-price-monthly,.home-price-yearly').forEach(function(p){
+    document.querySelectorAll('.price-monthly-home,.price-yearly-home').forEach(function(p){
       p.classList.toggle('hidden', p.dataset.cycle !== c);
     });
-    document.querySelectorAll('[data-home-plan-cta]').forEach(function(a){
+    document.querySelectorAll('[data-plan-cta-home]').forEach(function(a){
       a.href = a.href.replace(/cycle=\w+/, 'cycle=' + c);
     });
   }
-  document.querySelectorAll('.home-cycle-btn').forEach(function(b){
+  document.querySelectorAll('.cycle-btn-home').forEach(function(b){
     b.addEventListener('click', function(){ set(b.dataset.cycle); });
   });
 })();
 </script>
 {% endif %}
-
 
 <!-- Wellness Hub preview -->
 {% if posts %}

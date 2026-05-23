@@ -1,4 +1,3 @@
-{% from "partials/_macros.html" import export_button %}
 {% extends "admin/_layout.html" %}
 {% set active = 'products' %}
 {% block title %}Admin — Products{% endblock %}
@@ -20,7 +19,10 @@
         {% for c in categories %}<option value="{{ c['slug'] }}" {% if c['slug']==cat %}selected{% endif %}>{{ c['name'] }}</option>{% endfor %}
       </select>
     </form>
-    {{ export_button(url_for('admin_products_export'), 'Export CSV') }}
+    <a href="{{ url_for('admin_products_export') }}" class="btn-export">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Export CSV
+    </a>
     <a href="{{ url_for('admin_product_new') }}" class="btn-fuchsia rounded-full px-5 py-2.5 text-sm font-extrabold uppercase tracking-wider border-2 border-black inline-flex items-center gap-2">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       New product
@@ -69,19 +71,11 @@
             {% endif %}
           </td>
           <td class="py-2 text-right">
-            <div class="flex items-center gap-3 justify-end">
+            <div class="flex items-center gap-1 justify-end">
               <a href="{{ url_for('admin_product_edit', pid=p['id']) }}" class="text-xs font-bold uppercase tracking-wider hover:text-[var(--fuchsia)]">Edit</a>
-              <form action="{{ url_for('admin_product_toggle', pid=p['id']) }}" method="post" class="inline">
+              <form action="{{ url_for('admin_product_delete', pid=p['id']) }}" method="post" data-confirm="Customers won't see it. Past orders keep working." data-confirm-title="Disable product?" data-confirm-label="Disable">
                 <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
-                <button type="submit" class="text-xs font-bold uppercase tracking-wider {% if p['is_active'] %}text-amber-600{% else %}text-emerald-600{% endif %} hover:underline">
-                  {% if p['is_active'] %}Disable{% else %}Enable{% endif %}
-                </button>
-              </form>
-              <form action="{{ url_for('admin_product_delete', pid=p['id']) }}" method="post" class="inline"
-                    data-confirm="Removes the product permanently. If it appears in past orders, it'll be disabled instead."
-                    data-confirm-title="Delete {{ p['name']|e }}?" data-confirm-label="Delete">
-                <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
-                <button type="submit" class="text-xs font-bold uppercase tracking-wider text-rose-600 hover:underline">Delete</button>
+                <button type="submit" class="text-xs font-bold uppercase tracking-wider text-rose-600 hover:underline ml-2">Disable</button>
               </form>
             </div>
           </td>

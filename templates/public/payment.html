@@ -1,49 +1,29 @@
 {% extends "base.html" %}
 {% block title %}Secure payment — KCBlendz{% endblock %}
 
-{% set is_ng = order.region == 'NG' %}
-
 {% block content %}
 <section class="max-w-6xl mx-auto px-4 py-10">
   <div class="mb-8">
-    <p class="text-xs uppercase tracking-[0.3em] text-[var(--kc-green)] font-extrabold">{% if order.is_subscription %}Subscribe · Step 2 of 2{% else %}Checkout · Step 3 of 3{% endif %}</p>
+    <p class="text-xs uppercase tracking-[0.3em] text-[var(--kc-green)] font-extrabold">Checkout · Step 3 of 3</p>
     <h1 class="brand text-4xl md:text-5xl mt-1">Secure payment</h1>
     <p class="text-gray-600 mt-1 text-sm">Order <span class="font-bold text-[var(--kc-dark)]">{{ order.order_number }}</span> · Total <span class="font-extrabold text-[var(--kc-orange)]">{{ format_money(order.total, order.region) }}</span></p>
   </div>
 
   <div class="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8">
-    <!-- LEFT: payment form -->
+    <!-- LEFT: payment form, branches per method -->
     <div>
-      <!-- Payment-method switcher — change without losing cart / order details -->
-      <div class="bg-white border-2 border-[var(--kc-dark)] rounded-2xl p-4 mb-5 shadow-[3px_3px_0_var(--kc-dark)]">
-        <form method="post" action="{{ url_for('payment_change_method', order_id=order.id) }}" class="flex flex-wrap items-center gap-2">
-          <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
-          <span class="text-[11px] uppercase tracking-widest font-extrabold text-gray-500 mr-2">Payment method:</span>
-          {% if is_ng %}
-          <button type="submit" name="payment_method" value="card"
-                  class="text-xs font-extrabold uppercase tracking-wider rounded-full px-3 py-1.5 border-2 border-[var(--kc-dark)] {% if order.payment_method == 'card' %}bg-[var(--kc-dark)] text-white{% else %}bg-white hover:bg-[var(--kc-yellow)]{% endif %}">Card (Paystack)</button>
-          {% else %}
-          <button type="submit" name="payment_method" value="card"
-                  class="text-xs font-extrabold uppercase tracking-wider rounded-full px-3 py-1.5 border-2 border-[var(--kc-dark)] {% if order.payment_method == 'card' %}bg-[var(--kc-dark)] text-white{% else %}bg-white hover:bg-[var(--kc-yellow)]{% endif %}">Card</button>
-          <button type="submit" name="payment_method" value="paypal"
-                  class="text-xs font-extrabold uppercase tracking-wider rounded-full px-3 py-1.5 border-2 border-[var(--kc-dark)] {% if order.payment_method == 'paypal' %}bg-[var(--kc-dark)] text-white{% else %}bg-white hover:bg-[var(--kc-yellow)]{% endif %}">PayPal</button>
-          {% endif %}
-          <button type="submit" name="payment_method" value="bank_transfer"
-                  class="text-xs font-extrabold uppercase tracking-wider rounded-full px-3 py-1.5 border-2 border-[var(--kc-dark)] {% if order.payment_method == 'bank_transfer' %}bg-[var(--kc-dark)] text-white{% else %}bg-white hover:bg-[var(--kc-yellow)]{% endif %}">Bank transfer</button>
-        </form>
-      </div>
 
+      {# ─────────────────────────── BANK TRANSFER ─────────────────────────── #}
       {% if order.payment_method == 'bank_transfer' %}
-        <!-- ───────────── Bank transfer flow ───────────── -->
         <div class="bg-white rounded-2xl border-2 border-[var(--kc-dark)] p-6 shadow-[6px_6px_0_var(--kc-dark)]">
           <h2 class="brand text-2xl mb-2">Direct bank transfer</h2>
-          <p class="text-sm text-gray-700 mb-5">Transfer the total to the account below, then upload your proof of payment to activate your order. We verify all transfers fast — usually within 10 minutes during opening hours.</p>
+          <p class="text-sm text-gray-700 mb-5">Transfer the total to the account below, then upload your proof of payment. We verify within 10 minutes during opening hours.</p>
 
           <div class="bg-[var(--kc-bg)] border-2 border-[var(--kc-green)] rounded-xl p-5 mb-6">
             <p class="text-[11px] uppercase tracking-widest text-gray-500 font-bold mb-1">Bank details</p>
             <p class="font-bold text-lg">KCBlendz Ltd.</p>
             <div class="grid grid-cols-2 gap-3 mt-3 text-sm">
-              {% if is_ng %}
+              {% if order.region == 'NG' %}
                 <div><p class="text-[11px] uppercase font-bold text-gray-500">Bank</p><p class="font-bold">Zenith Bank</p></div>
                 <div><p class="text-[11px] uppercase font-bold text-gray-500">Account #</p><p class="font-bold">2034567890</p></div>
               {% else %}
@@ -60,251 +40,256 @@
             <div>
               <label class="label">Upload proof of payment (screenshot or PDF)</label>
               <input type="file" name="proof" accept="image/*,.pdf" required class="input w-full">
-              <p class="text-xs text-gray-500 mt-2">Max 8MB. Acceptable: bank slip photo, transfer screenshot, mobile banking confirmation.</p>
+              <p class="text-xs text-gray-500 mt-2">Max 8MB.</p>
             </div>
-            <button type="submit" class="btn-orange w-full font-extrabold uppercase tracking-wider rounded-full py-3 border-2 border-[var(--kc-dark)] shadow-[4px_4px_0_var(--kc-dark)] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_var(--kc-dark)] transition">Submit proof &amp; complete order</button>
+            <button type="submit" class="btn-green w-full font-extrabold uppercase tracking-wider rounded-full py-3 border-2 border-[var(--kc-dark)] shadow-[4px_4px_0_var(--kc-dark)]">Submit proof &amp; complete order</button>
           </form>
         </div>
 
+      {# ─────────────────────────────── PAYPAL ─────────────────────────────── #}
       {% elif order.payment_method == 'paypal' %}
-        <!-- ───────────── PayPal authenticate flow ───────────── -->
         <div class="bg-white rounded-2xl border-2 border-[var(--kc-dark)] p-6 shadow-[6px_6px_0_var(--kc-dark)]">
-          <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-3 mb-5">
+            <svg width="38" height="38" viewBox="0 0 24 24" fill="#003087"><path d="M7.5 5h7.6c2.5 0 4.6 1.6 4.6 4 0 3-2.5 5-5.4 5h-2.2c-.4 0-.7.3-.8.7l-1.1 5.1c-.1.3-.4.5-.7.5H6.4c-.3 0-.6-.3-.5-.6L7.5 5z"/></svg>
             <div>
               <h2 class="brand text-2xl">Pay with PayPal</h2>
-              <p class="text-sm text-gray-600 mt-1 flex items-center gap-2">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--kc-green)" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                You authenticate securely with PayPal — we never see your password.
-              </p>
+              <p class="text-sm text-gray-600">Sign in to your PayPal account to authorise this payment.</p>
             </div>
-            <span class="inline-flex items-center justify-center px-3 h-9 rounded bg-[#003087] text-white text-sm font-extrabold italic tracking-tight">Pay<span class="text-[#009cde]">Pal</span></span>
           </div>
 
-          <form method="post" action="{{ url_for('payment_process', order_id=order.id) }}" class="space-y-4" id="paypal-form" novalidate>
-            <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
-            <input type="hidden" name="paypal_authenticated" value="1">
-            <div class="bg-[#f5f7fa] border-2 border-[#003087]/20 rounded-xl p-5 space-y-4">
-              <p class="text-sm font-bold text-[#003087]">Log in to PayPal to approve this payment</p>
-              <div>
-                <label class="label">PayPal email</label>
-                <input type="email" name="paypal_email" required autocomplete="email"
-                       placeholder="you@example.com" class="input w-full">
+          <!-- PayPal authentication screen -->
+          <div class="bg-[#f5f7fa] border-2 border-[#003087]/20 rounded-xl p-5">
+            <div class="bg-white rounded-lg shadow-sm p-6 max-w-sm mx-auto">
+              <div class="text-center mb-5">
+                <svg width="90" height="26" viewBox="0 0 90 26" class="mx-auto" aria-hidden="true">
+                  <text x="0" y="20" font-family="Arial,sans-serif" font-size="22" font-weight="700" fill="#003087">Pay</text>
+                  <text x="38" y="20" font-family="Arial,sans-serif" font-size="22" font-weight="700" fill="#009cde">Pal</text>
+                </svg>
+                <p class="text-xs text-gray-600 mt-3">
+                  Sign in to your PayPal account to complete payment of
+                  <strong>{{ format_money(order.total, order.region) }}</strong> to <strong>KCBlendz</strong>.
+                </p>
               </div>
-              <div>
-                <label class="label">PayPal password</label>
-                <div class="relative">
-                  <input type="password" name="paypal_password" id="pp_pw" required minlength="6"
-                         autocomplete="current-password" class="input w-full pr-11">
-                  <button type="button" data-toggle-password="pp_pw"
-                          class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-[var(--kc-dark)]"
-                          aria-label="Show password">
-                    <svg class="eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                    <svg class="eye-closed hidden" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-                  </button>
+
+              <form method="post" action="{{ url_for('payment_process', order_id=order.id) }}" class="space-y-3" id="paypal-form">
+                <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+
+                <div>
+                  <label for="paypal_email" class="text-[10px] uppercase tracking-widest font-bold text-gray-500 block mb-1">Email or mobile number</label>
+                  <input type="email" id="paypal_email" name="paypal_email" required
+                         autocomplete="email"
+                         placeholder="you@example.com"
+                         class="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm focus:border-[#003087] focus:ring-2 focus:ring-[#003087]/20 outline-none">
                 </div>
-              </div>
+
+                <div>
+                  <label for="paypal_password" class="text-[10px] uppercase tracking-widest font-bold text-gray-500 block mb-1">Password</label>
+                  <div class="relative">
+                    <input type="password" id="paypal_password" name="paypal_password" required minlength="4"
+                           autocomplete="current-password"
+                           class="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm focus:border-[#003087] focus:ring-2 focus:ring-[#003087]/20 outline-none pr-10">
+                    <button type="button"
+                            onclick="var i=document.getElementById('paypal_password'); i.type=i.type==='password'?'text':'password';"
+                            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-[#003087]"
+                            aria-label="Show password">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </button>
+                  </div>
+                </div>
+
+                <button type="submit" class="w-full bg-[#0070ba] hover:bg-[#005ea6] text-white rounded-full py-3 text-sm font-bold transition shadow-sm">
+                  Log In to PayPal
+                </button>
+
+                <p class="text-[11px] text-center text-gray-500 pt-1">
+                  By logging in, you authorise PayPal to pay KCBlendz
+                  <strong>{{ format_money(order.total, order.region) }}</strong>.
+                </p>
+              </form>
             </div>
-            <button type="submit"
-                    class="btn-orange w-full font-extrabold uppercase tracking-wider rounded-full py-3 border-2 border-[var(--kc-dark)] shadow-[4px_4px_0_var(--kc-dark)] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_var(--kc-dark)] transition">
-              Authenticate &amp; pay {{ format_money(order.total, order.region) }}
-            </button>
-          </form>
+          </div>
+
+          <p class="text-xs text-gray-500 text-center mt-5 flex items-center justify-center gap-1.5">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            PayPal Purchase Protection · 256-bit TLS
+          </p>
         </div>
 
-      {% else %}
-        <!-- ───────────── Card flow (Paystack for NG, secure processor for MU/Global) ───────────── -->
+      {# ───────────────────────────── PAYSTACK ──────────────────────────────── #}
+      {% elif order.payment_method == 'paystack' %}
         <div class="bg-white rounded-2xl border-2 border-[var(--kc-dark)] p-6 shadow-[6px_6px_0_var(--kc-dark)]">
-          <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-3 mb-5">
+            <span class="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-[#011B33] text-[#00C3F7] font-extrabold text-xl">P</span>
+            <div>
+              <h2 class="brand text-2xl">Pay with Paystack</h2>
+              <p class="text-sm text-gray-600">Cards · USSD · Bank Transfer · Mobile Money</p>
+            </div>
+          </div>
+
+          <div class="bg-[#f4f7fa] border-2 border-[#011B33]/15 rounded-xl p-5">
+            <div class="bg-white rounded-lg shadow-sm max-w-sm mx-auto overflow-hidden">
+              <div class="bg-[#011B33] text-white px-4 py-3 flex items-center justify-between">
+                <span class="text-xs font-bold tracking-wider">PAYSTACK CHECKOUT</span>
+                <span class="text-xs font-bold">{{ format_money(order.total, order.region) }}</span>
+              </div>
+              <div class="p-4">
+                <p class="text-xs text-gray-600 mb-3">Charging <strong>{{ format_money(order.total, order.region) }}</strong> for order <strong>{{ order.order_number }}</strong></p>
+                <div class="flex gap-2 mb-4 text-xs">
+                  <button type="button" class="flex-1 py-2 border-2 border-[#011B33] rounded-md font-bold bg-[#011B33] text-white">Card</button>
+                  <button type="button" class="flex-1 py-2 border border-gray-300 rounded-md font-bold text-gray-600">USSD</button>
+                  <button type="button" class="flex-1 py-2 border border-gray-300 rounded-md font-bold text-gray-600">Bank</button>
+                </div>
+                <form method="post" action="{{ url_for('payment_process', order_id=order.id) }}" class="space-y-3">
+                  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+                  <label class="block">
+                    <span class="text-[10px] uppercase tracking-widest font-bold text-gray-500">Card number</span>
+                    <input name="card_number" required inputmode="numeric" maxlength="23" placeholder="0000 0000 0000 0000" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm font-mono focus:border-[#00C3F7] outline-none">
+                  </label>
+                  <div class="grid grid-cols-2 gap-2">
+                    <label class="block">
+                      <span class="text-[10px] uppercase tracking-widest font-bold text-gray-500">Expiry</span>
+                      <input name="card_expiry" required maxlength="5" placeholder="MM/YY" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm font-mono focus:border-[#00C3F7] outline-none">
+                    </label>
+                    <label class="block">
+                      <span class="text-[10px] uppercase tracking-widest font-bold text-gray-500">CVV</span>
+                      <input type="password" name="card_cvv" required maxlength="4" placeholder="•••" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm font-mono focus:border-[#00C3F7] outline-none">
+                    </label>
+                  </div>
+                  <input type="hidden" name="card_name" value="Paystack Customer">
+                  <button type="submit" class="w-full bg-[#00C3F7] hover:bg-[#00a8d6] text-[#011B33] rounded-md py-2.5 text-sm font-extrabold transition">
+                    Pay {{ format_money(order.total, order.region) }}
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <p class="text-xs text-gray-500 text-center mt-5 flex items-center justify-center gap-1.5">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            Paystack PCI-DSS Level 1 · CBN-licensed
+          </p>
+        </div>
+
+      {# ──────────────────────────────── CARD ──────────────────────────────── #}
+      {% else %}
+        <div class="bg-white rounded-2xl border-2 border-[var(--kc-dark)] p-6 shadow-[6px_6px_0_var(--kc-dark)]">
+          <div class="flex items-center justify-between mb-4 pb-5 border-b-2 border-dashed border-[var(--kc-dark)]/15">
             <div>
               <h2 class="brand text-2xl">Pay with card</h2>
               <p class="text-sm text-gray-600 mt-1 flex items-center gap-2">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--kc-green)" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                Secured by 256-bit TLS · PCI-DSS Level 1{% if is_ng %} · processed by Paystack{% endif %}
+                Secured by 256-bit TLS · PCI-DSS compliant
               </p>
             </div>
             <div class="flex items-center gap-1.5">
-              <span class="inline-flex items-center justify-center w-11 h-7 rounded bg-white border border-[var(--kc-dark)]/20 text-[#1A1F71] text-[11px] font-extrabold tracking-tight">VISA</span>
+              <span class="inline-flex items-center justify-center w-11 h-7 rounded bg-white border border-[var(--kc-dark)]/20 text-[#1A1F71] text-[11px] font-extrabold">VISA</span>
               <span class="inline-flex items-center justify-center w-11 h-7 rounded bg-white border border-[var(--kc-dark)]/20" aria-label="Mastercard">
                 <svg width="26" height="16" viewBox="0 0 26 16"><circle cx="10" cy="8" r="6" fill="#EB001B"/><circle cx="16" cy="8" r="6" fill="#F79E1B"/><path d="M13 3.6a6 6 0 0 1 0 8.8 6 6 0 0 1 0-8.8z" fill="#FF5F00"/></svg>
               </span>
-              <span class="inline-flex items-center justify-center w-11 h-7 rounded bg-[#1976D2] text-white text-[9px] font-extrabold tracking-tight">AMEX</span>
-              {% if is_ng %}<span class="hidden sm:inline-flex items-center justify-center w-12 h-7 rounded bg-white border border-[var(--kc-dark)]/20 text-[#15803d] text-[9px] font-extrabold">VERVE</span>{% endif %}
+              <span class="inline-flex items-center justify-center w-11 h-7 rounded bg-[#1976D2] text-white text-[9px] font-extrabold">AMEX</span>
             </div>
           </div>
 
           <form method="post" action="{{ url_for('payment_process', order_id=order.id) }}" class="space-y-4" id="card-form" novalidate>
             <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
-
             <div>
               <label class="label">Card number</label>
               <div class="relative">
-                <input type="text" name="card_number" id="card_number"
-                       inputmode="numeric" autocomplete="cc-number" required
-                       maxlength="23" placeholder="1234 5678 9012 3456"
-                       class="input w-full pr-20 font-mono tracking-wider">
-                <div id="card-brand-icon" class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center h-7 w-11 rounded bg-[var(--kc-bg)] text-[10px] font-extrabold text-gray-400 transition">CARD</div>
+                <input type="text" name="card_number" id="card_number" inputmode="numeric" autocomplete="cc-number" required
+                       maxlength="23" placeholder="1234 5678 9012 3456" class="input w-full pr-20 font-mono tracking-wider">
+                <div id="card-brand-icon" class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center h-7 w-11 rounded bg-[var(--kc-bg)] text-[10px] font-extrabold text-gray-400">CARD</div>
               </div>
             </div>
-
             <div>
               <label class="label">Cardholder name</label>
-              <input type="text" name="card_name" required autocomplete="cc-name"
-                     placeholder="Name as it appears on card" class="input w-full">
+              <input type="text" name="card_name" required autocomplete="cc-name" placeholder="Name as it appears on card" class="input w-full">
             </div>
-
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="label">Expiry (MM/YY)</label>
-                <input type="text" name="card_expiry" id="card_expiry" required
-                       inputmode="numeric" autocomplete="cc-exp" maxlength="5"
-                       placeholder="MM/YY" class="input w-full font-mono">
+                <input type="text" name="card_expiry" id="card_expiry" required inputmode="numeric"
+                       autocomplete="cc-exp" maxlength="5" placeholder="MM/YY" class="input w-full font-mono">
               </div>
               <div>
-                <label class="label">CVV</label>
+                <label class="label">Security code (CVV)</label>
                 <div class="relative">
                   <input type="password" name="card_cvv" id="card_cvv" required
-                         inputmode="numeric" autocomplete="cc-csc" maxlength="4"
-                         placeholder="•••" class="input w-full pr-10 font-mono tracking-[0.3em]">
-                  <button type="button" data-toggle-password="card_cvv"
-                          class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[var(--kc-dark)]"
+                         inputmode="numeric" autocomplete="cc-csc"
+                         maxlength="4" minlength="3" pattern="\d{3,4}"
+                         placeholder="•••"
+                         class="input w-full pr-10 font-mono tracking-[0.4em]">
+                  <button type="button"
+                          onclick="var i=document.getElementById('card_cvv'); i.type = i.type === 'password' ? 'text' : 'password';"
+                          class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-[var(--kc-dark)]"
                           aria-label="Show CVV">
-                    <svg class="eye-open" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                    <svg class="eye-closed hidden" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                   </button>
                 </div>
+                <p class="text-[10px] text-gray-500 mt-1">3 digits on the back · 4 for Amex (front)</p>
               </div>
             </div>
-
-            {% if current_user() %}
-            <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-              <input type="checkbox" name="save_card" class="w-4 h-4 accent-[var(--kc-green)]">
-              Securely save this card for faster checkout next time
-            </label>
-            {% endif %}
-
-            <button type="submit" id="pay-button"
-                    class="btn-orange w-full font-extrabold uppercase tracking-wider rounded-full py-3 border-2 border-[var(--kc-dark)] shadow-[4px_4px_0_var(--kc-dark)] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_var(--kc-dark)] transition">
+            <button type="submit" class="btn-orange w-full font-extrabold uppercase tracking-wider rounded-full py-3 border-2 border-[var(--kc-dark)] shadow-[4px_4px_0_var(--kc-dark)]">
               Pay {{ format_money(order.total, order.region) }} securely
             </button>
-
-            <p class="text-[11px] text-gray-500 text-center flex items-center justify-center gap-1.5 mt-2">
+            <p class="text-[11px] text-gray-500 text-center mt-2 flex items-center justify-center gap-1.5">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-              We never store your full card number — only the last 4 digits and brand.
+              We never store full card numbers — only the last 4 digits and brand.
             </p>
           </form>
         </div>
-
-        {% if current_user() and current_user()['role'] == 'admin' %}
-        <details class="mt-4 bg-[var(--kc-cream)] border-2 border-[var(--kc-yellow)] rounded-xl p-4">
-          <summary class="cursor-pointer text-sm font-bold flex items-center gap-2">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--kc-orange)" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
-            Sandbox test cards — sandbox mode (admin only)
-          </summary>
-          <div class="mt-3 text-xs text-gray-700 space-y-1 font-mono">
-            <p>Visa: 4242 4242 4242 4242 · any future MM/YY · any 3-digit CVV</p>
-            <p>Mastercard: 5555 5555 5555 4444 · any future MM/YY · any 3-digit CVV</p>
-            <p>Amex: 3782 822463 10005 · any future MM/YY · 4-digit CVV (1234)</p>
-          </div>
-        </details>
-        {% endif %}
       {% endif %}
     </div>
 
-    <!-- RIGHT: order summary sidebar -->
+    <!-- RIGHT: order summary -->
     <aside class="lg:sticky lg:top-24 h-fit">
       <div class="bg-white rounded-2xl border-2 border-[var(--kc-dark)] p-5">
         <h3 class="font-extrabold uppercase tracking-widest text-xs text-[var(--kc-green)] mb-4">Order summary</h3>
         <dl class="space-y-2 text-sm">
           <div class="flex justify-between"><dt class="text-gray-600">Subtotal</dt><dd class="font-bold">{{ format_money(order.subtotal, order.region) }}</dd></div>
           {% if order.discount_amount and order.discount_amount > 0 %}
-          <div class="flex justify-between text-emerald-700"><dt>Discount{% if order.promo_code %} · {{ order.promo_code }}{% endif %}</dt><dd class="font-bold">− {{ format_money(order.discount_amount, order.region) }}</dd></div>
+            <div class="flex justify-between text-emerald-700"><dt>Discount{% if order.promo_code %} · {{ order.promo_code }}{% endif %}</dt><dd class="font-bold">− {{ format_money(order.discount_amount, order.region) }}</dd></div>
           {% endif %}
           <div class="flex justify-between"><dt class="text-gray-600">Delivery</dt><dd class="font-bold">{{ format_money(order.delivery_fee, order.region) if order.delivery_fee else 'Free' }}</dd></div>
           <div class="flex justify-between text-base pt-2 border-t border-[var(--kc-dark)]/10 mt-3"><dt class="font-extrabold">Total</dt><dd class="font-extrabold text-[var(--kc-orange)] text-lg">{{ format_money(order.total, order.region) }}</dd></div>
         </dl>
-
         <div class="mt-5 pt-4 border-t border-[var(--kc-dark)]/10 text-xs text-gray-600 space-y-1.5">
           <p class="flex gap-2"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--kc-green)" stroke-width="2.5" class="shrink-0"><polyline points="20 6 9 17 4 12"/></svg>Free returns within 24h</p>
           <p class="flex gap-2"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--kc-green)" stroke-width="2.5" class="shrink-0"><polyline points="20 6 9 17 4 12"/></svg>Made fresh same day</p>
-          <p class="flex gap-2"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--kc-green)" stroke-width="2.5" class="shrink-0"><polyline points="20 6 9 17 4 12"/></svg>Real fruit guarantee</p>
         </div>
       </div>
-
-      {% if order.is_subscription %}
-      <a href="{{ url_for('subscribe_index') }}" class="block text-center mt-4 text-sm font-bold text-[var(--kc-green)] hover:text-[var(--kc-green-deep)]">← Back to plans</a>
-      {% else %}
-      <a href="{{ url_for('cart') }}" class="block text-center mt-4 text-sm font-bold text-[var(--kc-green)] hover:text-[var(--kc-green-deep)]">← Back to cart</a>
-      {% endif %}
+      <a href="{{ url_for('cart') }}" class="block text-center mt-4 text-sm font-bold text-[var(--kc-green)]">← Back to cart</a>
     </aside>
   </div>
 </section>
-{% endblock %}
 
-{% block scripts %}
 <script>
-  // Generic show/hide password toggle (CVV + PayPal password) with eye/eye-off swap
-  document.querySelectorAll('[data-toggle-password]').forEach(function(btn){
-    btn.addEventListener('click', function(){
-      var input = document.getElementById(btn.getAttribute('data-toggle-password'));
-      if (!input) return;
-      var show = input.type === 'password';
-      input.type = show ? 'text' : 'password';
-      var open = btn.querySelector('.eye-open'), closed = btn.querySelector('.eye-closed');
-      if (open && closed){ open.classList.toggle('hidden', show); closed.classList.toggle('hidden', !show); }
+(function(){
+  function fmtCard(v){ return v.replace(/\D/g,'').slice(0,19).replace(/(.{4})/g,'$1 ').trim(); }
+  function fmtExp(v){ v = v.replace(/\D/g,'').slice(0,4); return v.length > 2 ? v.slice(0,2) + '/' + v.slice(2) : v; }
+  ['card_number','card_expiry'].forEach(function(id){
+    document.querySelectorAll('input[name="'+id+'"]').forEach(function(el){
+      el.addEventListener('input', function(){ el.value = id === 'card_number' ? fmtCard(el.value) : fmtExp(el.value); });
     });
   });
-
-  // Card brand detection + formatting
-  const numInput = document.getElementById('card_number');
-  const brandEl  = document.getElementById('card-brand-icon');
-  const expInput = document.getElementById('card_expiry');
-  const cvvInput = document.getElementById('card_cvv');
-
-  const BRANDS = {
-    visa:       { test: n => /^4/.test(n),                           label: 'VISA',     color: '#1A1F71', bg: '#fff' },
-    mastercard: { test: n => /^5[1-5]/.test(n) || /^2[2-7]/.test(n), label: 'MC',       color: '#EB001B', bg: '#fff' },
-    amex:       { test: n => /^3[47]/.test(n),                       label: 'AMEX',     color: '#fff',    bg: '#1976D2' },
-    discover:   { test: n => /^6(?:011|5)/.test(n),                  label: 'DISCOVER', color: '#FF6000', bg: '#fff' },
-    verve:      { test: n => /^5061/.test(n) || /^650/.test(n),      label: 'VERVE',    color: '#15803d', bg: '#fff' },
-  };
-
-  function detectBrand(n) {
-    for (const [name, b] of Object.entries(BRANDS)) if (b.test(n)) return { name, ...b };
-    return null;
+  var n = document.getElementById('card_number');
+  var b = document.getElementById('card-brand-icon');
+  if (n && b){
+    n.addEventListener('input', function(){
+      var v = n.value.replace(/\D/g,'');
+      var brand = 'CARD';
+      if (/^4/.test(v))                          brand = 'VISA';
+      else if (/^(5[1-5]|2[2-7])/.test(v))       brand = 'MC';
+      else if (/^3[47]/.test(v))                 brand = 'AMEX';
+      else if (/^6/.test(v))                     brand = 'DISC';
+      b.textContent = brand;
+      b.className = 'absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center h-7 w-11 rounded text-[10px] font-extrabold transition ' +
+        (brand === 'VISA' ? 'bg-[#1A1F71] text-white' :
+         brand === 'MC'   ? 'bg-orange-500 text-white' :
+         brand === 'AMEX' ? 'bg-[#1976D2] text-white' :
+         brand === 'DISC' ? 'bg-[#FF6000] text-white' :
+                            'bg-[var(--kc-bg)] text-gray-400');
+    });
   }
-
-  if (numInput) numInput.addEventListener('input', e => {
-    let digits = e.target.value.replace(/\D/g, '').slice(0, 19);
-    const isAmex = /^3[47]/.test(digits);
-    if (isAmex) {
-      digits = digits.slice(0, 15);
-      e.target.value = digits.replace(/^(\d{0,4})(\d{0,6})(\d{0,5})/, (_,a,b,c)=>[a,b,c].filter(Boolean).join(' '));
-    } else {
-      e.target.value = digits.replace(/(.{4})/g, '$1 ').trim();
-    }
-    const brand = detectBrand(digits);
-    if (brand) {
-      brandEl.textContent = brand.label;
-      brandEl.style.color = brand.color;
-      brandEl.style.background = brand.bg;
-      brandEl.style.fontSize = brand.label.length > 4 ? '8px' : '10px';
-      brandEl.style.fontWeight = '800';
-    } else {
-      brandEl.textContent = 'CARD';
-      brandEl.style.color = '#9ca3af';
-      brandEl.style.background = 'var(--kc-bg)';
-      brandEl.style.fontSize = '10px';
-    }
-  });
-
-  if (expInput) expInput.addEventListener('input', e => {
-    let v = e.target.value.replace(/\D/g, '').slice(0,4);
-    if (v.length >= 3) v = v.slice(0,2) + '/' + v.slice(2);
-    e.target.value = v;
-  });
-
-  if (cvvInput) cvvInput.addEventListener('input', e => {
-    e.target.value = e.target.value.replace(/\D/g, '').slice(0,4);
-  });
+})();
 </script>
 {% endblock %}

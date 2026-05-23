@@ -473,12 +473,14 @@ class SandboxVisibilityTests(unittest.TestCase):
                 "SELECT id FROM orders WHERE order_number='KC-TEST-001'"
             ).fetchone()["id"]
 
-    def test_admin_sees_sandbox_test_cards(self):
+    def test_admin_does_not_see_sandbox_test_cards(self):
+        """Sandbox / demo banners must never appear on the customer payment
+        page — even for admins. Devs see them only in source comments."""
         _login(self.client, "admin@kcblendz.com", "KCBlendz@2026")
         with self.client.session_transaction() as s:
             s["region"] = "MU"
         r = self.client.get(f"/payment/{self.oid}")
-        self.assertIn("Sandbox test cards", r.get_data(as_text=True))
+        self.assertNotIn("Sandbox test cards", r.get_data(as_text=True))
 
     def test_guest_does_not_see_sandbox(self):
         client = kc.app.test_client()

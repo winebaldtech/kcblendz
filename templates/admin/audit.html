@@ -1,0 +1,47 @@
+{% extends "admin/_layout.html" %}
+{% set active = 'audit' %}
+{% block page_title %}Audit Log{% endblock %}
+
+{% block admin_body %}
+<div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+  <p class="text-sm text-gray-600">{{ total }} entries · showing {{ logs|length }} on page {{ page }}/{{ pages }}</p>
+  <a href="{{ url_for('admin_audit_export') }}" class="btn-export"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export CSV</a>
+</div>
+
+<div class="bg-white rounded-2xl border-2 border-black overflow-hidden">
+  <table class="w-full text-sm">
+    <thead class="bg-[var(--bg)] border-b-2 border-black">
+      <tr class="text-[10px] uppercase tracking-widest font-bold text-gray-600">
+        <th class="text-left p-3">When</th>
+        <th class="text-left p-3">Who</th>
+        <th class="text-left p-3">Action</th>
+        <th class="text-left p-3">Entity</th>
+        <th class="text-left p-3 hidden md:table-cell">Metadata</th>
+        <th class="text-left p-3 hidden lg:table-cell">IP</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for l in logs %}
+      <tr class="border-b border-gray-100 hover:bg-[var(--kc-yellow)]/10">
+        <td class="p-3 font-mono text-xs whitespace-nowrap">{{ l['created_at'][:16] }}</td>
+        <td class="p-3 text-xs">{{ l['user_email'] or '—' }}</td>
+        <td class="p-3"><code class="text-xs font-mono bg-gray-100 px-2 py-0.5 rounded">{{ l['action'] }}</code></td>
+        <td class="p-3 text-xs">{{ l['entity'] or '' }}{% if l['entity_id'] %} #{{ l['entity_id'] }}{% endif %}</td>
+        <td class="p-3 text-xs text-gray-500 max-w-xs truncate hidden md:table-cell">{{ l['meta'] or '' }}</td>
+        <td class="p-3 text-xs text-gray-500 hidden lg:table-cell">{{ l['ip_address'] or '' }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="p-6 text-center text-gray-500">No audit entries yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if pages > 1 %}
+<div class="flex items-center justify-center gap-2 mt-4">
+  {% if page > 1 %}<a href="?page={{ page-1 }}" class="btn-outline-dark rounded-full px-3 py-1.5 text-xs font-bold uppercase">← Prev</a>{% endif %}
+  <span class="text-xs text-gray-500 font-bold">Page {{ page }} of {{ pages }}</span>
+  {% if page < pages %}<a href="?page={{ page+1 }}" class="btn-outline-dark rounded-full px-3 py-1.5 text-xs font-bold uppercase">Next →</a>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

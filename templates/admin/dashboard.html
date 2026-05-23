@@ -8,9 +8,9 @@
 {% endblock %}
 
 {% block admin_body %}
-<!-- Stat cards — accurate, paid orders only, currency-aware -->
+<!-- Stat cards -->
 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-  <!-- Revenue today (paid product orders, split by currency) -->
+  <!-- Revenue today (split by currency so we never mix NGN, MUR & USD into one number) -->
   <div class="bg-white rounded-2xl border-2 border-[var(--kc-dark)] p-4 shadow-[4px_4px_0_var(--kc-orange)]">
     <p class="text-[10px] uppercase tracking-widest font-bold text-gray-500">Revenue today</p>
     {% if stats['revenue_today'] %}
@@ -27,8 +27,6 @@
       <p class="text-[11px] text-gray-500 mt-0.5">No paid orders today</p>
     {% endif %}
   </div>
-
-  <!-- Revenue this month -->
   <div class="bg-white rounded-2xl border-2 border-[var(--kc-dark)] p-4 shadow-[4px_4px_0_var(--kc-yellow)]">
     <p class="text-[10px] uppercase tracking-widest font-bold text-gray-500">Revenue this month</p>
     {% if stats['revenue_month'] %}
@@ -42,22 +40,17 @@
       </div>
     {% else %}
       <p class="text-2xl font-extrabold mt-1 text-gray-300">—</p>
-      <p class="text-[11px] text-gray-500 mt-0.5">No revenue yet this month</p>
     {% endif %}
   </div>
-
-  <!-- Orders (paid product orders) -->
   <div class="bg-white rounded-2xl border-2 border-[var(--kc-dark)] p-4 shadow-[4px_4px_0_var(--kc-green)]">
-    <p class="text-[10px] uppercase tracking-widest font-bold text-gray-500">Paid orders today</p>
+    <p class="text-[10px] uppercase tracking-widest font-bold text-gray-500">Orders today</p>
     <p class="text-2xl md:text-3xl font-extrabold mt-1 text-[var(--kc-dark)]">{{ stats['orders_today'] }}</p>
     <p class="text-[11px] text-gray-500 mt-0.5">{{ stats['orders_month'] }} this month</p>
   </div>
-
-  <!-- Customers (active customer accounts) -->
   <div class="bg-white rounded-2xl border-2 border-[var(--kc-dark)] p-4 shadow-[4px_4px_0_var(--kc-green-deep)]">
-    <p class="text-[10px] uppercase tracking-widest font-bold text-gray-500">Active customers</p>
+    <p class="text-[10px] uppercase tracking-widest font-bold text-gray-500">Customers</p>
     <p class="text-2xl md:text-3xl font-extrabold mt-1 text-[var(--kc-dark)]">{{ stats['customers'] }}</p>
-    <p class="text-[11px] text-gray-500 mt-0.5">{{ stats['active_subs'] }} active subscription{% if stats['active_subs'] != 1 %}s{% endif %}</p>
+    <p class="text-[11px] text-gray-500 mt-0.5">{{ stats['products'] }} active products</p>
   </div>
 </div>
 
@@ -187,32 +180,21 @@
     data: {
       labels: labels.map(l => l.slice(5)),
       datasets: [
-        { label: 'Nigeria (NGN)',   data: ngData, yAxisID: 'yNG', borderColor: '#F7941D', backgroundColor: 'rgba(247,148,29,.12)', borderWidth: 3, tension: .3, fill: true, pointRadius: 4, pointBackgroundColor: '#F7941D' },
-        { label: 'Mauritius (MUR)', data: muData, yAxisID: 'yMU', borderColor: '#2E8B57', backgroundColor: 'rgba(46,139,87,.12)',   borderWidth: 3, tension: .3, fill: true, pointRadius: 4, pointBackgroundColor: '#2E8B57' },
-        { label: 'Global (USD)',    data: glData, yAxisID: 'yGL', borderColor: '#FBC02D', backgroundColor: 'rgba(251,192,45,.12)', borderWidth: 3, tension: .3, fill: true, pointRadius: 4, pointBackgroundColor: '#FBC02D' },
+        { label: 'Nigeria (NGN)',   data: ngData, borderColor: '#F7941D', backgroundColor: 'rgba(247,148,29,.12)', borderWidth: 3, tension: .3, fill: true, pointRadius: 4, pointBackgroundColor: '#F7941D' },
+        { label: 'Mauritius (MUR)', data: muData, borderColor: '#2E8B57', backgroundColor: 'rgba(46,139,87,.12)',   borderWidth: 3, tension: .3, fill: true, pointRadius: 4, pointBackgroundColor: '#2E8B57' },
+        { label: 'Global (USD)',    data: glData, borderColor: '#FBC02D', backgroundColor: 'rgba(251,192,45,.12)', borderWidth: 3, tension: .3, fill: true, pointRadius: 4, pointBackgroundColor: '#FBC02D' },
       ]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       animation: { duration: 600 },
-      interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: { position: 'bottom', labels: { font: { size: 12, weight: '600' }, color: '#1B3A2F' } },
-        tooltip: { callbacks: {
-          label: function(ctx){
-            var sym = { 'Nigeria (NGN)': '\u20a6', 'Mauritius (MUR)': 'Rs ', 'Global (USD)': '$' }[ctx.dataset.label] || '';
-            return ctx.dataset.label + ': ' + sym + Number(ctx.parsed.y).toLocaleString();
-          }
-        }}
+        legend: { position: 'bottom', labels: { font: { size: 12, weight: '600' }, color: '#1B3A2F' } }
       },
       scales: {
-        // Each region gets its own Y axis so different currency scales
-        // (₦15k vs Rs380 vs $5) don't squash each other on a single axis.
-        yNG: { type: 'linear', position: 'left',  beginAtZero: true, grid: { color: 'rgba(247,148,29,0.08)' }, ticks: { color: '#F7941D', callback: v => '\u20a6' + Number(v).toLocaleString() } },
-        yMU: { type: 'linear', position: 'right', beginAtZero: true, grid: { display: false }, ticks: { color: '#2E8B57', callback: v => 'Rs ' + Number(v).toLocaleString() } },
-        yGL: { type: 'linear', position: 'right', beginAtZero: true, grid: { display: false }, ticks: { color: '#FBC02D', callback: v => '$' + Number(v).toLocaleString() } },
-        x:   { ticks: { color: '#6b7280' }, grid: { display: false } }
+        y: { beginAtZero: true, ticks: { color: '#6b7280' }, grid: { color: 'rgba(27,58,47,0.08)' } },
+        x: { ticks: { color: '#6b7280' }, grid: { display: false } }
       }
     }
   });

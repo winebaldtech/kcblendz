@@ -7,8 +7,8 @@
     <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
   </div>
 
-  <h1 class="text-3xl md:text-5xl font-extrabold mb-3">{% if order['is_subscription'] %}You're in, {{ order['full_name'].split(' ')[0] }}!{% else %}Thank you, {{ order['full_name'].split(' ')[0] }}!{% endif %}</h1>
-  <p class="text-gray-600 mb-1">{% if order['is_subscription'] %}Your subscription is active.{% else %}Your order is confirmed.{% endif %}</p>
+  <h1 class="text-3xl md:text-5xl font-extrabold mb-3">Thank you, {{ order['full_name'].split(' ')[0] }}!</h1>
+  <p class="text-gray-600 mb-1">Your order is confirmed.</p>
   <p class="text-sm text-gray-500">A receipt has been sent to <span class="font-bold">{{ order['email'] }}</span></p>
 
   <div class="bg-white rounded-2xl border-2 border-black p-6 mt-8 text-left">
@@ -52,40 +52,25 @@
   </div>
 
   <div class="flex flex-wrap items-center justify-center gap-3 mt-8">
-    {% if order['is_subscription'] %}
-      {% if current_user() %}
-      <a href="{{ url_for('account_dashboard') }}" class="btn-fuchsia rounded-full px-6 py-3 font-extrabold uppercase tracking-wider text-sm border-2 border-black">
-        Go to my account
-      </a>
-      {% endif %}
-      <a href="{{ url_for('order_receipt', order_id=order['id'], token=order['tracking_token']) }}" target="_blank"
-         class="btn-outline-dark rounded-full px-6 py-3 font-extrabold uppercase tracking-wider text-sm border-2 border-black">
-        🖨 Print receipt
-      </a>
-      <a href="{{ url_for('shop') }}" class="btn-outline-dark rounded-full px-6 py-3 font-extrabold uppercase tracking-wider text-sm border-2 border-black">
-        Browse shop
+    {% if current_user() %}
+      <a href="{{ url_for('account_order_detail', order_id=order['id']) }}" class="btn-fuchsia rounded-full px-6 py-3 font-extrabold uppercase tracking-wider text-sm border-2 border-black">
+        Track this order
       </a>
     {% else %}
-      {% if current_user() %}
-        <a href="{{ url_for('account_order_detail', order_id=order['id']) }}" class="btn-fuchsia rounded-full px-6 py-3 font-extrabold uppercase tracking-wider text-sm border-2 border-black">
-          Track this order
-        </a>
-      {% else %}
-        <a href="{{ url_for('track_order', token=order['tracking_token']) }}" class="btn-fuchsia rounded-full px-6 py-3 font-extrabold uppercase tracking-wider text-sm border-2 border-black">
-          Track this order
-        </a>
-      {% endif %}
-      <a href="{{ url_for('order_receipt', order_id=order['id'], token=order['tracking_token']) }}" target="_blank"
-         class="btn-outline-dark rounded-full px-6 py-3 font-extrabold uppercase tracking-wider text-sm border-2 border-black">
-        🖨 Print receipt
-      </a>
-      <a href="{{ url_for('shop') }}" class="btn-outline-dark rounded-full px-6 py-3 font-extrabold uppercase tracking-wider text-sm border-2 border-black">
-        Keep shopping
+      <a href="{{ url_for('track_order', token=order['tracking_token']) }}" class="btn-fuchsia rounded-full px-6 py-3 font-extrabold uppercase tracking-wider text-sm border-2 border-black">
+        Track this order
       </a>
     {% endif %}
+    <a href="{{ url_for('order_receipt', order_id=order['id'], token=order['tracking_token']) }}" target="_blank"
+       class="btn-outline-dark rounded-full px-6 py-3 font-extrabold uppercase tracking-wider text-sm border-2 border-black">
+      🖨 Print receipt
+    </a>
+    <a href="{{ url_for('shop') }}" class="btn-outline-dark rounded-full px-6 py-3 font-extrabold uppercase tracking-wider text-sm border-2 border-black">
+      Keep shopping
+    </a>
   </div>
 
-  {% if not current_user() and not order['is_subscription'] %}
+  {% if not current_user() %}
     <p class="text-xs text-gray-500 mt-6 max-w-md mx-auto bg-[var(--kc-yellow)]/30 border-2 border-[var(--kc-yellow)] rounded-xl p-3">
       <strong class="block mb-0.5">Bookmark your tracking link:</strong>
       <a href="{{ url_for('track_order', token=order['tracking_token'], _external=True) }}" class="break-all font-mono text-[10px]">{{ url_for('track_order', token=order['tracking_token'], _external=True) }}</a>

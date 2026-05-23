@@ -1,0 +1,58 @@
+{% extends "admin/_layout.html" %}
+{% set active = 'daily-reports' %}
+{% block page_title %}Daily Reports{% endblock %}
+
+{% block admin_body %}
+<div class="grid lg:grid-cols-3 gap-5">
+  <!-- Run form -->
+  <aside>
+    <form method="post" action="{{ url_for('admin_daily_reports_run') }}" class="bg-white rounded-2xl border-2 border-black p-5 shadow-[4px_4px_0_#000] space-y-3 lg:sticky lg:top-24">
+      <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+      <h2 class="text-base font-extrabold uppercase tracking-wider">Run for date</h2>
+      <p class="text-xs text-gray-600">Generates or re-generates the per-region report for the selected date. Re-running is safe — rows are upserted.</p>
+      <label class="block">
+        <span class="label">Report date</span>
+        <input type="date" name="date" class="input w-full">
+      </label>
+      <button class="w-full bg-[var(--kc-orange)] text-white border-2 border-black rounded-full py-2 font-extrabold uppercase tracking-wider text-xs shadow-[3px_3px_0_#000]">Run report</button>
+      <a href="{{ url_for('admin_daily_reports_export') }}" class="btn-export w-full justify-center"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export CSV</a>
+      <hr class="border-dashed border-black/10">
+      <p class="text-[10px] text-gray-500">
+        In production set <code class="bg-gray-100 px-1">KCB_SCHEDULER=1</code> on one worker for automatic nightly runs (00:05 server time).
+      </p>
+    </form>
+  </aside>
+
+  <!-- Table -->
+  <div class="lg:col-span-2">
+    <div class="bg-white rounded-2xl border-2 border-black overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-[var(--bg)] border-b-2 border-black">
+          <tr class="text-[10px] uppercase tracking-widest font-bold text-gray-600">
+            <th class="text-left p-3">Date</th>
+            <th class="text-left p-3">Region</th>
+            <th class="text-right p-3">Orders</th>
+            <th class="text-right p-3">Revenue</th>
+            <th class="text-left p-3 hidden md:table-cell">Top product</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in rows %}
+          <tr class="border-b border-gray-100">
+            <td class="p-3 font-mono text-xs whitespace-nowrap">{{ r['report_date'] }}</td>
+            <td class="p-3 font-bold">{{ r['region'] }}</td>
+            <td class="p-3 text-right">{{ r['total_orders'] }}</td>
+            <td class="p-3 text-right font-extrabold">{{ format_money(r['total_revenue'], r['region']) }}</td>
+            <td class="p-3 text-xs text-gray-700 hidden md:table-cell">
+              {% if r['top_product_name'] %}{{ r['top_product_name'] }} <span class="text-gray-400">× {{ r['top_product_units'] }}</span>{% else %}—{% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5" class="p-6 text-center text-gray-500">No reports yet. Run the first one →</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

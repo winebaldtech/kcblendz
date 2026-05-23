@@ -58,6 +58,29 @@
   .btn-outline-dark { border: 2px solid var(--kc-dark); background: #fff; color: var(--kc-dark); transition: all .18s; }
   .btn-outline-dark:hover { background: var(--kc-yellow); }
 
+  /* Unified Export-CSV pill — used on every admin list page so they look the
+     same. White bg, dark text, black border, rounded-full, with the download
+     icon baked in. Apply with .btn-export — no extra classes needed. */
+  .btn-export {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: #fff;
+    border: 2px solid var(--kc-dark);
+    color: var(--kc-dark);
+    border-radius: 9999px;
+    padding: 0.5rem 1.25rem;
+    font-weight: 800;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    transition: all 0.15s;
+    cursor: pointer;
+    line-height: 1.1;
+  }
+  .btn-export:hover { background: var(--kc-yellow); transform: translateY(-1px); }
+  .btn-export svg { width: 14px; height: 14px; flex-shrink: 0; }
+
   /* Layout helpers */
   .scroll-x { overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; }
   .scroll-x::-webkit-scrollbar { display: none; }
@@ -92,6 +115,12 @@
   a:focus-visible, button:focus-visible, [role="button"]:focus-visible, summary:focus-visible {
     outline: 3px solid var(--kc-orange); outline-offset: 2px; border-radius: 6px;
   }
+
+  /* Suppress browser-native password reveal eye (Edge, IE, some Chromium builds)
+     — we provide our own toggle so the duplicate icons look broken otherwise. */
+  input[type="password"]::-ms-reveal,
+  input[type="password"]::-ms-clear,
+  input[type="password"]::-webkit-credentials-auto-fill-button { display: none !important; }
 
   /* Print niceties — site chrome should disappear when printing receipts. */
   @media print {
@@ -135,19 +164,6 @@
   .admin-link { display:flex; align-items:center; gap:12px; padding:10px 14px; border-radius:10px; font-weight:600; font-size:14px; color:#cbd5e1; transition:all .15s; text-decoration:none; }
   .admin-link:hover { background: rgba(247,148,29,0.15); color:#fff; }
   .admin-link.active { background: var(--kc-orange); color:#fff; }
-  /* Sticky, independently-scrolling admin sidebar on desktop */
-  .admin-sidebar { background: var(--kc-dark); }
-  @media (min-width: 1024px) {
-    .admin-sidebar { position: sticky; top: 0; height: 100vh; overflow-y: auto; flex-shrink: 0; }
-    .admin-sidebar::-webkit-scrollbar { width: 8px; }
-    .admin-sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,.18); border-radius: 8px; }
-  }
-
-  /* Hide the browser's built-in password reveal control so only our eye shows */
-  input.kc-no-native-reveal::-ms-reveal,
-  input.kc-no-native-reveal::-ms-clear { display:none; }
-  input.kc-no-native-reveal::-webkit-credentials-auto-fill-button,
-  input.kc-no-native-reveal::-webkit-strong-password-auto-fill-button { display:none !important; visibility:hidden; pointer-events:none; }
 
   /* Star rating */
   .star { color: var(--kc-yellow); }

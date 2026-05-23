@@ -17,12 +17,17 @@
     <p class="text-gray-700 leading-relaxed mb-4">Wellness isn't a fad — it's daily nourishment, made simple. We exist to put real, whole fruit and plant-based wellness drinks within reach of every busy household, gym-goer, parent, and professional.</p>
     <p class="text-gray-700 leading-relaxed">Every smoothie, juice, dried fruit and powder we make starts from raw ingredients sourced from local agro-processors. No syrups. No fillers. No shortcuts.</p>
   </div>
-  <div class="aspect-square rounded-2xl border-2 border-black overflow-hidden bg-gradient-to-br from-[var(--lime)] to-[var(--fuchsia)] p-4 flex items-center justify-center">
-    <video class="w-full h-full object-cover rounded-xl border-2 border-black"
-           autoplay muted loop playsinline
-           poster="{{ url_for('static', filename='img/kcblendz-products.png') }}">
+  <div class="aspect-video md:aspect-square rounded-2xl border-2 border-black overflow-hidden bg-gradient-to-br from-[var(--lime)] to-[var(--fuchsia)] p-4 flex items-center justify-center">
+    <video
+      class="w-full h-full object-cover rounded-xl border-2 border-black bg-black"
+      autoplay loop muted playsinline preload="metadata"
+      disablepictureinpicture disableremoteplayback
+      controlslist="nodownload nofullscreen noremoteplayback"
+      oncontextmenu="return false"
+      poster="{{ url_for('static', filename='img/kcblendz-products.png') }}"
+      aria-label="KCBlendz craft video — fresh smoothies and juices being made">
       <source src="{{ url_for('static', filename='img/kcblendz-video.mp4') }}" type="video/mp4">
-      <img src="{{ url_for('static', filename='img/kcblendz-products.png') }}" alt="KCBlendz products" class="w-full h-full object-contain">
+      Your browser does not support video playback.
     </video>
   </div>
 </section>

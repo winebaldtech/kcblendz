@@ -111,7 +111,7 @@
           {% for pay in payments %}
             <tr class="border-b border-dashed border-gray-200">
               <td class="py-2 text-xs">{{ pay['created_at'][:16] }}</td>
-              <td class="py-2">{{ pay['method']|replace('_',' ')|title }} · <span class="text-gray-500 text-xs">{% if pay['gateway'] == 'card_gateway' %}Card gateway{% elif pay['gateway'] == 'paystack' %}Paystack{% elif pay['gateway'] == 'paypal' %}PayPal{% elif pay['gateway'] == 'manual' %}Bank transfer{% else %}{{ pay['gateway']|title }}{% endif %}</span></td>
+              <td class="py-2">{{ pay['method'] }} · <span class="text-gray-500 text-xs">{{ pay['gateway'] }}</span></td>
               <td class="py-2 font-mono text-xs">{{ pay['reference'] }}</td>
               <td class="py-2 text-right font-bold">{{ format_money(pay['amount'], order['region']) }}</td>
               <td class="py-2 text-center"><span class="badge-square {% if pay['status']=='success' %}bg-[var(--lime)] text-black{% else %}bg-[var(--yellow)] text-black{% endif %}">{{ pay['status'].replace('_',' ') }}</span></td>

@@ -5,6 +5,7 @@
 
 {% block admin_body %}
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+  <!-- Create -->
   <aside>
     <form method="post" action="{{ url_for('admin_categories') }}" class="bg-white rounded-2xl border-2 border-black p-5 space-y-3 lg:sticky lg:top-24">
       <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
@@ -13,6 +14,10 @@
       <div>
         <label class="label">Name</label>
         <input type="text" name="name" required class="input w-full">
+      </div>
+      <div>
+        <label class="label">Sort order</label>
+        <input type="number" name="sort_order" value="0" class="input w-full">
       </div>
       <div>
         <label class="label">Description (optional)</label>
@@ -25,63 +30,81 @@
     </form>
   </aside>
 
+  <!-- List -->
   <div class="lg:col-span-2">
     <div class="bg-white rounded-2xl border-2 border-black p-5">
-      <h2 class="text-base font-extrabold uppercase tracking-wider mb-4">All categories ({{ categories|length }})</h2>
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-base font-extrabold uppercase tracking-wider">All categories ({{ categories|length }})</h2>
+        <div class="text-xs">
+          <a href="?show=active" class="font-bold {% if show != 'all' %}text-[var(--kc-orange)]{% else %}text-gray-500{% endif %} mr-3">Active</a>
+          <a href="?show=all" class="font-bold {% if show == 'all' %}text-[var(--kc-orange)]{% else %}text-gray-500{% endif %}">Show deleted</a>
+        </div>
+      </div>
+
       <ul class="divide-y-2 divide-dashed divide-gray-200">
         {% for c in categories %}
-        <li class="py-3">
-          <div class="flex items-center gap-4">
-            <div class="w-10 h-10 rounded-lg border-2 border-black bg-[var(--lime)] flex items-center justify-center font-extrabold">
-              {{ c['name'][:1] | upper }}
-            </div>
-            <div class="flex-1 min-w-0">
-              <p class="font-bold">{{ c['name'] }}
-                {% if not c['is_active'] %}<span class="ml-2 text-[10px] uppercase tracking-widest bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full">Hidden</span>{% endif %}
-              </p>
-              <p class="text-[11px] text-gray-500 font-mono">/{{ c['slug'] }} · {{ c['product_count'] }} product(s)</p>
-              {% if c['description'] %}<p class="text-xs text-gray-600 mt-0.5 line-clamp-1">{{ c['description'] }}</p>{% endif %}
-            </div>
-            <span class="text-xs text-gray-500 mr-1">#{{ c['sort_order'] or 0 }}</span>
-            <button type="button" onclick="this.closest('li').querySelector('[data-edit]').classList.toggle('hidden')"
-                    class="text-[var(--kc-green)] hover:underline text-xs font-bold uppercase tracking-wider">Edit</button>
-            <form method="post" action="{{ url_for('admin_categories') }}" class="inline">
-              <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
-              <input type="hidden" name="action" value="toggle">
-              <input type="hidden" name="cat_id" value="{{ c['id'] }}">
-              <button class="text-amber-600 hover:underline text-xs font-bold uppercase tracking-wider">{{ 'Show' if not c['is_active'] else 'Hide' }}</button>
-            </form>
-            <form method="post" action="{{ url_for('admin_categories') }}" class="inline"
-                  data-confirm="Products keep their links; the category is hidden from customers and storefront filters."
-                  data-confirm-title="Delete category “{{ c['name']|e }}”?"
-                  data-confirm-label="Yes, delete">
-              <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
-              <input type="hidden" name="action" value="delete">
-              <input type="hidden" name="cat_id" value="{{ c['id'] }}">
-              <button class="text-rose-600 hover:text-rose-700 text-xs font-bold uppercase tracking-wider">Delete</button>
-            </form>
+        <li class="py-3 flex items-center gap-4">
+          <div class="w-10 h-10 rounded-lg border-2 border-black bg-[var(--lime)] flex items-center justify-center font-extrabold shrink-0">
+            {{ c['name'][:1] | upper }}
           </div>
-          <form method="post" action="{{ url_for('admin_categories') }}" data-edit class="hidden mt-3 bg-[var(--bg)] border-2 border-black rounded-xl p-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2">
+              <p class="font-bold">{{ c['name'] }}</p>
+              {% if c['is_deleted'] %}<span class="text-[10px] uppercase font-bold bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full">Deleted</span>
+              {% elif not c['is_active'] %}<span class="text-[10px] uppercase font-bold bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full">Inactive</span>{% endif %}
+            </div>
+            <p class="text-[11px] text-gray-500 font-mono">/{{ c['slug'] }}</p>
+            {% if c['description'] %}<p class="text-xs text-gray-600 mt-0.5 line-clamp-1">{{ c['description'] }}</p>{% endif %}
+          </div>
+          <span class="text-xs text-gray-500 mr-1 hidden md:inline">Order: {{ c['sort_order'] or 0 }}</span>
+
+          <button type="button"
+                  onclick="document.getElementById('edit-cat-{{ c['id'] }}').showModal()"
+                  class="text-xs font-bold uppercase tracking-wider text-[var(--kc-orange)] hover:underline">
+            Edit
+          </button>
+
+          {% if not c['is_deleted'] %}
+          <form method="post" action="{{ url_for('admin_category_delete', cid=c['id']) }}"
+                data-confirm="Products in this category will be moved to Uncategorised. The category will be hidden from customers; historic order links keep working."
+                data-confirm-title="Delete category “{{ c['name']|e }}”?"
+                data-confirm-label="Yes, delete">
             <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
-            <input type="hidden" name="action" value="update">
-            <input type="hidden" name="cat_id" value="{{ c['id'] }}">
-            <div>
-              <label class="label">Name</label>
-              <input type="text" name="name" value="{{ c['name']|e }}" required class="input w-full">
-            </div>
-            <div>
-              <label class="label">Sort order</label>
-              <input type="number" name="sort_order" value="{{ c['sort_order'] or 0 }}" class="input w-full">
-            </div>
-            <div class="md:col-span-2">
-              <label class="label">Description</label>
-              <textarea name="description" rows="2" class="input w-full">{{ c['description'] or '' }}</textarea>
-            </div>
-            <div class="md:col-span-2 flex gap-2">
-              <button class="btn-green rounded-full px-5 py-2 text-xs font-extrabold uppercase tracking-wider border-2 border-black">Save changes</button>
-              <button type="button" onclick="this.closest('[data-edit]').classList.add('hidden')" class="btn-outline-dark rounded-full px-5 py-2 text-xs font-extrabold uppercase tracking-wider">Cancel</button>
-            </div>
+            <button class="text-rose-600 hover:text-rose-700 text-xs font-bold uppercase tracking-wider">Delete</button>
           </form>
+          {% endif %}
+
+          <!-- Edit modal -->
+          <dialog id="edit-cat-{{ c['id'] }}" class="rounded-2xl border-2 border-black p-0 max-w-md w-[92%] backdrop:bg-black/40">
+            <form method="post" action="{{ url_for('admin_categories') }}" class="bg-white p-5 space-y-3">
+              <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+              <input type="hidden" name="action" value="update">
+              <input type="hidden" name="id" value="{{ c['id'] }}">
+              <h3 class="font-extrabold text-lg">Edit “{{ c['name'] }}”</h3>
+              <label class="block">
+                <span class="label">Name</span>
+                <input name="name" value="{{ c['name'] }}" required class="input w-full">
+              </label>
+              <label class="block">
+                <span class="label">Description</span>
+                <textarea name="description" rows="3" class="input w-full">{{ c['description'] or '' }}</textarea>
+              </label>
+              <div class="grid grid-cols-2 gap-3">
+                <label class="block">
+                  <span class="label">Sort order</span>
+                  <input type="number" name="sort_order" value="{{ c['sort_order'] or 0 }}" class="input w-full">
+                </label>
+                <label class="flex items-center gap-2 self-end mb-2">
+                  <input type="checkbox" name="is_active" value="1" {% if c['is_active'] %}checked{% endif %}>
+                  <span class="text-sm font-bold">Active (visible to customers)</span>
+                </label>
+              </div>
+              <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="this.closest('dialog').close()" class="btn-outline-dark rounded-full px-4 py-2 text-xs font-extrabold uppercase tracking-wider">Cancel</button>
+                <button type="submit" class="bg-[var(--kc-orange)] text-white border-2 border-black rounded-full px-4 py-2 text-xs font-extrabold uppercase tracking-wider shadow-[2px_2px_0_#000]">Save changes</button>
+              </div>
+            </form>
+          </dialog>
         </li>
         {% else %}
         <li class="py-4 text-center text-gray-500 text-sm">No categories yet.</li>

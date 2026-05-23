@@ -1,12 +1,11 @@
-{# Sticky top navigation — KCBlendz brand colors #}
+{# Sticky top navigation — minimal, 5 primary links + Wellness dropdown #}
 {% set region = current_region() %}
 {% set user = current_user() %}
-{% set nav_cats = nav_categories() %}
 <header class="sticky top-0 z-50 bg-white border-b-2 border-[var(--kc-dark)]">
   <!-- Announcement strip -->
   <div class="bg-[var(--kc-dark)] text-white text-[12px] py-2 px-4 overflow-hidden">
-    <div class="max-w-7xl mx-auto flex items-center justify-between">
-      <p class="font-semibold tracking-wide flex items-center gap-2">
+    <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
+      <p class="font-semibold tracking-wide flex items-center gap-2 truncate">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--kc-yellow)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 3h5v5"/><path d="M21 3l-7 7"/><path d="M8 21H3v-5"/><path d="M3 21l7-7"/></svg>
         FREE LOCAL DELIVERY ON ORDERS OVER {{ format_money(15000 if region == 'NG' else (500 if region == 'MU' else 50), region or 'MU') }}
       </p>
@@ -38,7 +37,7 @@
     <!-- Right cluster -->
     <div class="flex items-center gap-2 ml-auto">
 
-      <!-- Region / currency dropdown (no redirect — switches in place via /api/region) -->
+      <!-- Region / currency dropdown -->
       {% if region %}
       <div class="relative hidden sm:block">
         <button type="button"
@@ -57,14 +56,12 @@
           {% endif %}
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
-        <div class="hidden absolute right-0 mt-2 w-56 bg-white border-2 border-[var(--kc-dark)] rounded-xl shadow-[4px_4px_0_var(--kc-dark)] py-1 z-50" role="menu" aria-label="Choose store / currency">
+        <div class="hidden absolute right-0 mt-2 w-56 bg-white border-2 border-[var(--kc-dark)] rounded-xl shadow-[4px_4px_0_var(--kc-dark)] py-1 z-50">
           <p class="px-4 py-2 text-[10px] uppercase tracking-[0.2em] text-gray-500 font-bold">Switch store</p>
           {% for code, info in REGIONS.items() %}
-            <button type="button"
-                    data-region-switch="{{ code }}" data-region-current="{{ region }}"
-                    class="w-full flex items-center gap-3 px-4 py-2 text-sm font-semibold hover:bg-[var(--kc-yellow)] {% if code == region %}bg-[var(--kc-yellow)]/30{% endif %}"
-                    role="menuitemradio" aria-checked="{{ 'true' if code == region else 'false' }}">
-              <span class="w-6 h-4 rounded-sm overflow-hidden border border-[var(--kc-dark)] inline-flex items-center justify-center bg-white shrink-0" aria-hidden="true">
+            <button type="button" data-region-switch="{{ code }}" data-region-current="{{ region }}"
+                    class="w-full flex items-center gap-3 px-4 py-2 text-sm font-semibold hover:bg-[var(--kc-yellow)] {% if code == region %}bg-[var(--kc-yellow)]/30{% endif %}">
+              <span class="w-6 h-4 rounded-sm overflow-hidden border border-[var(--kc-dark)] inline-flex items-center justify-center bg-white shrink-0">
                 {% if code == 'NG' %}<svg viewBox="0 0 22 14" class="w-full h-full"><rect width="22" height="14" fill="#fff"/><rect width="7.33" height="14" fill="#008751"/><rect x="14.67" width="7.33" height="14" fill="#008751"/></svg>
                 {% elif code == 'MU' %}<svg viewBox="0 0 22 14" class="w-full h-full"><rect width="22" height="3.5" fill="#EA2839"/><rect y="3.5" width="22" height="3.5" fill="#1A206D"/><rect y="7" width="22" height="3.5" fill="#FFD500"/><rect y="10.5" width="22" height="3.5" fill="#00A551"/></svg>
                 {% else %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-full h-full p-0.5"><circle cx="12" cy="12" r="10"/></svg>{% endif %}
@@ -73,27 +70,18 @@
                 <span class="block">{{ info.name }}</span>
                 <span class="block text-[10px] uppercase tracking-widest text-gray-500 font-bold">{{ info.currency }} · {{ info.symbol }}</span>
               </span>
-              {% if code == region %}
-                <svg class="text-[var(--kc-green)]" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-              {% endif %}
+              {% if code == region %}<svg class="text-[var(--kc-green)]" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>{% endif %}
             </button>
           {% endfor %}
         </div>
       </div>
       {% endif %}
 
-      {% if user %}
-      <a href="{{ url_for('account_favorites') }}" class="icon-btn relative" aria-label="Favorites" title="My favorites">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-      </a>
-      {% endif %}
-
       <!-- Cart -->
-      <a href="{{ url_for('cart') }}" class="icon-btn relative" aria-label="Cart" data-cart-link>
+      <a href="{{ url_for('cart') }}" class="icon-btn relative" aria-label="Cart">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
         {% set c = cart_count() %}
-        <span class="absolute -top-1 -right-1 bg-[var(--kc-orange)] text-white text-[10px] font-bold rounded-full w-5 h-5 items-center justify-center border-2 border-white {% if not c %}hidden{% endif %} flex"
-              data-cart-count>{{ c }}</span>
+        <span class="absolute -top-1 -right-1 bg-[var(--kc-orange)] text-white text-[10px] font-bold rounded-full w-5 h-5 items-center justify-center border-2 border-white {% if not c %}hidden{% endif %} flex" data-cart-count>{{ c }}</span>
       </a>
 
       <!-- Account -->
@@ -101,9 +89,9 @@
         <div class="relative">
           <button class="icon-btn overflow-hidden" onclick="this.nextElementSibling.classList.toggle('hidden')" aria-label="Account">
             {% if user['avatar_url'] %}
-              <img src="{{ user['avatar_url'] }}" alt="{{ user['full_name'] }}" class="w-full h-full object-cover rounded-full">
+              <img src="{{ user['avatar_url'] }}" alt="" class="w-full h-full object-cover rounded-full">
             {% else %}
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             {% endif %}
           </button>
           <div class="hidden absolute right-0 mt-2 w-60 bg-white border-2 border-[var(--kc-dark)] rounded-xl shadow-[4px_4px_0_var(--kc-dark)] py-2 z-50">
@@ -111,9 +99,8 @@
             <a href="{{ url_for('account_dashboard') }}" class="block px-4 py-2 text-sm font-semibold hover:bg-[var(--kc-yellow)]">Dashboard</a>
             <a href="{{ url_for('account_orders') }}"   class="block px-4 py-2 text-sm font-semibold hover:bg-[var(--kc-yellow)]">My Orders</a>
             <a href="{{ url_for('account_favorites') }}" class="block px-4 py-2 text-sm font-semibold hover:bg-[var(--kc-yellow)]">Favorites</a>
-            <a href="{{ url_for('account_saved') }}"    class="block px-4 py-2 text-sm font-semibold hover:bg-[var(--kc-yellow)]">Saved Smoothies</a>
             <a href="{{ url_for('account_addresses') }}" class="block px-4 py-2 text-sm font-semibold hover:bg-[var(--kc-yellow)]">Addresses</a>
-            <a href="{{ url_for('account_profile') }}"  class="block px-4 py-2 text-sm font-semibold hover:bg-[var(--kc-yellow)]">Profile</a>
+            <a href="{{ url_for('account_profile') }}" class="block px-4 py-2 text-sm font-semibold hover:bg-[var(--kc-yellow)]">Profile</a>
             {% if user['role'] == 'admin' %}
               <div class="border-t border-[var(--kc-dark)]/15 my-1.5"></div>
               <a href="{{ url_for('admin_dashboard') }}" class="block px-4 py-2 text-sm font-semibold text-[var(--kc-orange)] hover:bg-[var(--kc-yellow)]">Admin Panel</a>
@@ -132,26 +119,22 @@
 
       <!-- Mobile menu trigger -->
       <button class="icon-btn md:hidden" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')" aria-label="Menu">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
       </button>
     </div>
   </div>
 
-  <!-- Sub-nav: simplified primary links -->
-  <nav class="max-w-7xl mx-auto px-4 pb-2 hidden md:flex items-center gap-1">
-    {% set ep = request.endpoint or '' %}
-    {% set nav_active = 'bg-[var(--kc-yellow)] text-[var(--kc-dark)] shadow-[2px_2px_0_var(--kc-dark)]' %}
-    {% set nav_idle = 'hover:bg-[var(--kc-yellow)]' %}
-    <a href="{{ url_for('shop') }}"     class="px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-full transition shrink-0 {{ nav_active if ep in ['shop','product_detail'] else nav_idle }}">Shop</a>
-    <a href="{{ url_for('builder') }}"  class="px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-full transition shrink-0 {{ nav_active if ep == 'builder' else nav_idle }}">Builder</a>
-
-    <!-- Wellness -->
-    <a href="{{ url_for('wellness') }}" class="px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-full transition shrink-0 {{ nav_active if ep in ['wellness','wellness_post'] else nav_idle }}">Wellness</a>
-
-    <a href="{{ url_for('about') }}"    class="px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-full transition shrink-0 {{ nav_active if ep == 'about' else nav_idle }}">Our Story</a>
-    <a href="{{ url_for('subscribe_index') }}" class="px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-full transition shrink-0 {{ nav_active if ep in ['subscribe_index','subscribe_plan'] else nav_idle }}">Subscribe</a>
-    <a href="{{ url_for('contact') }}"  class="px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-full transition shrink-0 {{ nav_active if ep == 'contact' else nav_idle }}">Contact</a>
-    <a href="{{ url_for('builder') }}" class="ml-auto px-4 py-1.5 text-xs font-extrabold uppercase tracking-wider rounded-full btn-orange border-2 border-[var(--kc-dark)] shrink-0">+ Build Your Blend</a>
+  {# ─── Simplified primary nav: Shop · Builder · Wellness(dropdown) · Our Story · Contact ─── #}
+  <nav class="max-w-7xl mx-auto px-4 pb-2 hidden md:flex items-center gap-1 overflow-x-auto scroll-x">
+    <a href="{{ url_for('shop') }}"    class="px-4 py-1.5 text-xs font-extrabold uppercase tracking-wider rounded-full hover:bg-[var(--kc-yellow)] transition shrink-0">Shop</a>
+    <a href="{{ url_for('builder') }}" class="px-4 py-1.5 text-xs font-extrabold uppercase tracking-wider rounded-full bg-[var(--kc-yellow)] hover:bg-[var(--kc-yellow)]/80 transition shrink-0 inline-flex items-center gap-1">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Build Your Blend
+    </a>
+    <a href="{{ url_for('wellness') }}" class="px-4 py-1.5 text-xs font-extrabold uppercase tracking-wider rounded-full hover:bg-[var(--kc-yellow)] transition shrink-0">Wellness</a>
+    <a href="{{ url_for('about') }}"   class="px-4 py-1.5 text-xs font-extrabold uppercase tracking-wider rounded-full hover:bg-[var(--kc-yellow)] transition shrink-0">Our Story</a>
+    <a href="{{ url_for('contact') }}" class="px-4 py-1.5 text-xs font-extrabold uppercase tracking-wider rounded-full hover:bg-[var(--kc-yellow)] transition shrink-0">Contact</a>
+    <a href="{{ url_for('track_order') }}" class="px-4 py-1.5 text-xs font-extrabold uppercase tracking-wider rounded-full hover:bg-[var(--kc-yellow)] transition shrink-0">Track Order</a>
   </nav>
 
   <!-- Mobile menu -->
@@ -166,10 +149,10 @@
     </form>
     <nav class="p-2 grid grid-cols-2 gap-1">
       <a href="{{ url_for('shop') }}"     class="px-3 py-2 text-sm font-bold rounded-lg hover:bg-[var(--kc-yellow)]">Shop</a>
-      <a href="{{ url_for('builder') }}"  class="px-3 py-2 text-sm font-bold rounded-lg hover:bg-[var(--kc-yellow)]">Builder</a>
-      <a href="{{ url_for('wellness') }}" class="px-3 py-2 text-sm font-bold rounded-lg hover:bg-[var(--kc-yellow)]">Wellness</a>
-      <a href="{{ url_for('about') }}"    class="px-3 py-2 text-sm font-bold rounded-lg hover:bg-[var(--kc-yellow)]">Our Story</a>
+      <a href="{{ url_for('builder') }}"  class="px-3 py-2 text-sm font-bold rounded-lg bg-[var(--kc-yellow)]/40 hover:bg-[var(--kc-yellow)]">Build Blend</a>
+      <a href="{{ url_for('wellness') }}" class="px-3 py-2 text-sm font-bold rounded-lg hover:bg-[var(--kc-yellow)]">Wellness Hub</a>
       <a href="{{ url_for('subscribe_index') }}" class="px-3 py-2 text-sm font-bold rounded-lg hover:bg-[var(--kc-yellow)]">Subscribe</a>
+      <a href="{{ url_for('about') }}"    class="px-3 py-2 text-sm font-bold rounded-lg hover:bg-[var(--kc-yellow)]">Our Story</a>
       <a href="{{ url_for('contact') }}"  class="px-3 py-2 text-sm font-bold rounded-lg hover:bg-[var(--kc-yellow)]">Contact</a>
       <a href="{{ url_for('track_order') }}" class="px-3 py-2 text-sm font-bold rounded-lg hover:bg-[var(--kc-yellow)]">Track Order</a>
       {% if not user %}

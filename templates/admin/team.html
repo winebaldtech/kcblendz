@@ -1,0 +1,80 @@
+{% extends "admin/_layout.html" %}
+{% set active = 'team' %}
+{% block page_title %}Team Members{% endblock %}
+
+{% block admin_body %}
+<div class="grid lg:grid-cols-3 gap-5">
+  <!-- Add -->
+  <form method="post" enctype="multipart/form-data" class="bg-white rounded-2xl border-2 border-black p-5 shadow-[4px_4px_0_#000] space-y-3 lg:col-span-1 lg:sticky lg:top-24 self-start">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <input type="hidden" name="action" value="create">
+    <h2 class="font-display text-2xl">Add member</h2>
+    <label class="block"><span class="label">Full name</span>
+      <input name="full_name" required class="input w-full"></label>
+    <label class="block"><span class="label">Role / title</span>
+      <input name="role" required class="input w-full" placeholder="Head of Blends, Logistics, etc."></label>
+    <label class="block"><span class="label">Short bio</span>
+      <textarea name="bio" rows="3" class="input w-full"></textarea></label>
+    <label class="block"><span class="label">Photo (upload)</span>
+      <input type="file" name="avatar" accept="image/*" class="block text-xs"></label>
+    <label class="block"><span class="label">Or photo URL</span>
+      <input name="avatar_url" class="input w-full" placeholder="https://..."></label>
+    <label class="block"><span class="label">Sort order</span>
+      <input type="number" name="sort_order" value="0" class="input w-full"></label>
+    <button class="w-full bg-[var(--kc-orange)] text-white border-2 border-black rounded-full py-2 font-extrabold uppercase tracking-wider text-xs shadow-[3px_3px_0_#000]">Add member</button>
+  </form>
+
+  <!-- List -->
+  <div class="lg:col-span-2 grid sm:grid-cols-2 gap-4">
+    {% for m in team %}
+    <article class="bg-white rounded-2xl border-2 border-black overflow-hidden shadow-[3px_3px_0_#000] {% if not m['is_active'] %}opacity-60{% endif %}">
+      <div class="flex">
+        <div class="w-24 h-24 bg-gray-100 shrink-0">
+          {% if m['avatar_url'] %}<img src="{{ m['avatar_url'] }}" alt="" class="w-full h-full object-cover">{% endif %}
+        </div>
+        <div class="p-3 flex-1 min-w-0">
+          <p class="font-extrabold truncate">{{ m['full_name'] }}</p>
+          <p class="text-[10px] uppercase tracking-widest font-bold text-[var(--fuchsia)]">{{ m['role'] }}</p>
+          <p class="text-xs text-gray-600 mt-1 line-clamp-2">{{ m['bio'] or '' }}</p>
+        </div>
+      </div>
+      <div class="border-t border-black/10 px-3 py-2 flex items-center justify-between text-xs gap-2">
+        <span class="text-gray-500">Order {{ m['sort_order'] }} · {% if m['is_active'] %}Active{% else %}Hidden{% endif %}</span>
+        <div class="flex gap-2">
+          <button onclick="document.getElementById('edit-tm-{{ m['id'] }}').showModal()" class="font-bold text-[var(--kc-orange)] hover:underline uppercase tracking-wider">Edit</button>
+          <form method="post" data-confirm="Remove from the team page?" data-confirm-title="Remove “{{ m['full_name']|e }}”?" data-confirm-label="Remove">
+            <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="delete">
+            <input type="hidden" name="id" value="{{ m['id'] }}">
+            <button class="font-bold text-rose-600 hover:underline uppercase tracking-wider">Remove</button>
+          </form>
+        </div>
+      </div>
+
+      <dialog id="edit-tm-{{ m['id'] }}" class="rounded-2xl border-2 border-black p-0 max-w-md w-[92%] backdrop:bg-black/40">
+        <form method="post" enctype="multipart/form-data" class="bg-white p-5 space-y-3">
+          <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+          <input type="hidden" name="action" value="update">
+          <input type="hidden" name="id" value="{{ m['id'] }}">
+          <h3 class="font-extrabold text-lg">Edit member</h3>
+          <label class="block"><span class="label">Full name</span><input name="full_name" value="{{ m['full_name'] }}" required class="input w-full"></label>
+          <label class="block"><span class="label">Role</span><input name="role" value="{{ m['role'] }}" required class="input w-full"></label>
+          <label class="block"><span class="label">Bio</span><textarea name="bio" rows="3" class="input w-full">{{ m['bio'] or '' }}</textarea></label>
+          <label class="block"><span class="label">Replace photo (optional)</span><input type="file" name="avatar" accept="image/*"></label>
+          <div class="grid grid-cols-2 gap-3">
+            <label class="block"><span class="label">Sort order</span><input type="number" name="sort_order" value="{{ m['sort_order'] }}" class="input w-full"></label>
+            <label class="flex items-center gap-2 self-end mb-2"><input type="checkbox" name="is_active" value="1" {% if m['is_active'] %}checked{% endif %}><span class="text-sm font-bold">Active</span></label>
+          </div>
+          <div class="flex justify-end gap-2 pt-2">
+            <button type="button" onclick="this.closest('dialog').close()" class="btn-outline-dark rounded-full px-4 py-2 text-xs font-extrabold uppercase tracking-wider">Cancel</button>
+            <button type="submit" class="bg-[var(--kc-orange)] text-white border-2 border-black rounded-full px-4 py-2 text-xs font-extrabold uppercase tracking-wider">Save</button>
+          </div>
+        </form>
+      </dialog>
+    </article>
+    {% else %}
+    <p class="text-gray-500 italic">No team members yet.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

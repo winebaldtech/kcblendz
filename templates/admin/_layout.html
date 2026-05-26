@@ -2,7 +2,7 @@
 {% extends "base.html" %}
 {% set hide_chrome = True %}
 {% set au = admin_unread() %}
-{% set u  = current_user() %}
+{% set me = current_user() %}
 
 {% block content %}
 <div class="flex flex-col lg:flex-row min-h-screen bg-[var(--bg)]">
@@ -52,13 +52,13 @@
             <button class="flex items-center gap-2 border-2 border-black rounded-full p-1 pr-3 hover:bg-[var(--kc-yellow)]/30 transition"
                     onclick="this.nextElementSibling.classList.toggle('hidden')">
               <span class="w-8 h-8 rounded-full overflow-hidden inline-flex items-center justify-center bg-[var(--kc-yellow)]">
-                {% if u and u['avatar_url'] %}
-                  <img src="{{ u['avatar_url'] }}" alt="" class="w-full h-full object-cover">
+                {% if me and me['avatar_url'] %}
+                  <img src="{{ me['avatar_url'] }}" alt="" class="w-full h-full object-cover">
                 {% else %}
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 {% endif %}
               </span>
-              <span class="hidden md:inline text-xs font-extrabold uppercase tracking-wider">{{ (u['full_name'].split(' ')[0] if u and u['full_name'] else 'Admin') }}</span>
+              <span class="hidden md:inline text-xs font-extrabold uppercase tracking-wider">{{ (me['full_name'].split(' ')[0] if me and me['full_name'] else 'Admin') }}</span>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
             <div class="hidden absolute right-0 mt-2 w-56 bg-white border-2 border-black rounded-xl shadow-[4px_4px_0_#000] py-1 z-50">
